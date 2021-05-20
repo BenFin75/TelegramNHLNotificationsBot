@@ -293,8 +293,8 @@ def gamecheck(update, context, formatted_team_ids, team_ids):
 
         context.bot.send_message(chat_id=chat_id_set, text=game_check_msg);
 
-def next(update, context):
-
+def nextgame(update, context):
+    next_game_check_msg = "what?"
     next_game_request = update.message.text
     team_check = next_game_request [10:].lower()
     nextdf = pd.read_csv(teamsdb, index_col=None) 
@@ -380,21 +380,21 @@ def next(update, context):
 
         tie_check = away_games_won - home_games_won
         if tie_check != 0:
-           game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+           next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
               + "The " + leading_team + " Lead " + leading_games + " games to " + trailing_games + "!")
 
-           updater.bot.sendMessage(chat_id=update.effective_chat.id, text = game_check_msg);
+           updater.bot.sendMessage(chat_id=update.effective_chat.id, text = next_game_check_msg);
 
         if tie_check == 0:
             if home_games_won ==1:
                 home_games_won_str = str(home_games_won)
-                game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
                  + "The series is tied at "+ home_games_won_str + " game!")
             else:
                 home_games_won_str = str(home_games_won)
-                game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
                  + "The series is tied at "+ home_games_won_str + " games!")
-            updater.bot.sendMessage(chat_id=update.effective_chat.id, text = game_check_msg);
+            updater.bot.sendMessage(chat_id=update.effective_chat.id, text = next_game_check_msg);
 
 
     if playoff_check == 'R':
@@ -440,6 +440,7 @@ def next(update, context):
                             "," + away_losses + "," + away_ot + ")" + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!")
 
         context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
+    context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
 
 
 
@@ -457,7 +458,7 @@ def game(update, context):
     slashgame = 0
 
 #sends a help message when /help is received
-def help(update, context):
+def helpcmd(update, context):
     help_msg = (
         "Here is a list of my commands:" + "\n" + "\n" + 
         "/setup" + "\n" + "select which teams you would like notifications for" + "\n" + "\n" + 
@@ -731,15 +732,13 @@ def timer ():
 #stop the bot
 def stop(update, context):
     if update.message.chat.id == 110799848:
-        shutdown_msg = 'Shuting Down'
-        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = shutdown_msg);
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = 'Shuting Down');
         updater.stop()
         updater.is_idle = False
 
 def testautonotify(update, context):
     if update.message.chat.id == 110799848:
-        testing_msg = 'Testing Automatic Notifications'
-        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = testing_msg);
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = 'Testing Automatic Notifications');
         automation()
 
 #starts automation
@@ -752,8 +751,8 @@ updater.dispatcher.add_handler(CallbackQueryHandler(button))
 #Creates a handler for each command
 start_handler = CommandHandler('start', start)
 game_handler = CommandHandler('game', game)
-nextgame_handler = CommandHandler('nextgame', next)
-help_handler = CommandHandler('help', help)
+nextgame_handler = CommandHandler('nextgame', nextgame)
+help_handler = CommandHandler('help', helpcmd)
 lastgame_handler = CommandHandler('lastgame', last)
 notifications_handler = CommandHandler('notifications', notifications)
 status_handler = CommandHandler('status', status)
