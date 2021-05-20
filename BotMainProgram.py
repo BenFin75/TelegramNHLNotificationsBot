@@ -121,12 +121,11 @@ def button(update: Update, context: CallbackContext):
     global slashgame
     if update.callback_query.data == '✔️':
         chat_id_set = update.effective_chat.id
+        print(update)
         update.callback_query.answer()
         update.callback_query.message.edit_reply_markup(
             reply_markup=InlineKeyboardMarkup([])
             )
-        #sent_id = callback_query.message.chat.id
-        #msg_id = callback_query.message.message_id
         context.bot.deleteMessage(update.callback_query.message.chat.id, update.callback_query.message.message_id)
         setup_msg = 'Your team preferences have been updated!'
         context.bot.send_message(chat_id=update.effective_chat.id, text=setup_msg)
@@ -744,34 +743,19 @@ def testautonotify(update, context):
 #starts automation
 timer()
 
-#fancy way of creating a handler and dispatcher
-updater.dispatcher.add_handler(CommandHandler('setup', setup))
-updater.dispatcher.add_handler(CallbackQueryHandler(button))
-
-#Creates a handler for each command
-start_handler = CommandHandler('start', start)
-game_handler = CommandHandler('game', game)
-nextgame_handler = CommandHandler('nextgame', nextgame)
-help_handler = CommandHandler('help', helpcmd)
-lastgame_handler = CommandHandler('lastgame', last)
-notifications_handler = CommandHandler('notifications', notifications)
-status_handler = CommandHandler('status', status)
-cupcheck_handler = CommandHandler('cupcheck', cupcheck)
-stop_handler = CommandHandler('stop', stop)
-testautonotify_handler = CommandHandler('testautonotify', testautonotify)
-
-
-#Adds each command to the dispatcher
-dispatcher.add_handler(start_handler)
-dispatcher.add_handler(help_handler)
-dispatcher.add_handler(nextgame_handler)
-dispatcher.add_handler(lastgame_handler)
-dispatcher.add_handler(game_handler)
-dispatcher.add_handler(notifications_handler)
-dispatcher.add_handler(status_handler)
-dispatcher.add_handler(cupcheck_handler)
-dispatcher.add_handler(stop_handler)
-dispatcher.add_handler(testautonotify_handler)
+#dispatcher for each command
+dispatcher.add_handler(CommandHandler('setup', setup))
+dispatcher.add_handler(CallbackQueryHandler(button))
+dispatcher.add_handler(CommandHandler('start', start))
+dispatcher.add_handler(CommandHandler('game', game))
+dispatcher.add_handler(CommandHandler('nextgame', nextgame))
+dispatcher.add_handler(CommandHandler('help', helpcmd))
+dispatcher.add_handler(CommandHandler('lastgame', last))
+dispatcher.add_handler(CommandHandler('notifications', notifications))
+dispatcher.add_handler(CommandHandler('status', status))
+dispatcher.add_handler(CommandHandler('cupcheck', cupcheck))
+dispatcher.add_handler(CommandHandler('stop', stop))
+dispatcher.add_handler(CommandHandler('testautonotify', testautonotify))
 
 
 
