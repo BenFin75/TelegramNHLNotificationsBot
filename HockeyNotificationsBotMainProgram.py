@@ -251,12 +251,12 @@ def gamecheck(update, context, formatted_team_ids, team_ids):
                 if tie_check == 0:
                     if home_games_won ==1:
                         home_games_won_str = str(home_games_won)
-                        game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
-                         + "The series is tied at "+ home_games_won_str + " game!")
+                        game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
+                      + "The series is tied at "+ home_games_won_str + " game!")
                     else:
                         home_games_won_str = str(home_games_won)
-                        game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
-                         + "The series is tied at "+ home_games_won_str + " games!")
+                        game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
+                      + "The series is tied at "+ home_games_won_str + " games!")
                     updater.bot.sendMessage(chat_id=update.effective_chat.id, text = game_check_msg);
 
              if playoff_check == 'R':
