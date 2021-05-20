@@ -26,3 +26,11 @@ bot = Bot(bot_token)
 updater=Updater(bot_token, use_context=True)
 ```
  where bot_token is your bots token
+
+ I also have the stop command set to only be able to be run in my chat,  
+ so if you want to be able to shut down your bot in telegram you will have to change 110799848 to your chatid here:
+
+```
+def stoplink(update, context):
+    if update.message.chat.id == 110799848:
+```
