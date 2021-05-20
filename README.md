@@ -8,7 +8,7 @@ I hope you like it!
 
 # Important for redeploying
 In order to keep the bot tokens private they are stored in a seperate csv.  
-If you want to use this code for your own bot you will need to create a csv or remove 
+If you want to use this code for your own bot you will need to create a csv or remove:
 
 ```
 bot_token_df = pd.read_csv((os.path.join(os.path.dirname(os.getcwd()),"TelegramBotTokens.csv")))
@@ -19,7 +19,7 @@ bot = Bot(bot_token)
 updater=Updater(bot_token, use_context=True)
 ```
 
-and replace it with
+and replace it with:
 
 ```
 bot = Bot(bot_token)
