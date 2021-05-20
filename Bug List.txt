@@ -1,0 +1,5 @@
+BUG 1:  if the user does /game on the day a team wins a playoff series and after the game is over, the bot will think the winning team 		has won 0 games in the series
+		HOW TO FIX: If the game is already oover send the /game command to lastgame function to return the final score
+			OR: If the game is already over return "Today's game has ended!"
+
+BUG 2:
