@@ -122,7 +122,6 @@ def button(update: Update, context: CallbackContext):
     global slashgame
     if update.callback_query.data == '✔️':
         chat_id_set = update.effective_chat.id
-        print(update)
         update.callback_query.answer()
         update.callback_query.message.edit_reply_markup(
             reply_markup=InlineKeyboardMarkup([])
@@ -740,7 +739,6 @@ def roster(update, context):
     team_fin = team[1:-1]
     team_dec = str(team_fin.decode("utf8"))
     rosterlist = []
-    print(type(rosterlist))
     for player in roster:
         name = player['person']['fullName']
         number = int(player['jerseyNumber'])
@@ -781,8 +779,6 @@ def player(update, context):
     found = 0
     for player in roster:
         number = int(player['jerseyNumber'])
-        print(number)
-        print(player_info)
         name = player['person']['fullName']
         first, last = name.split(' ')
         if number == player_info or first.lower() == player_info or last.lower() == player_info or name.lower() == player_info:
