@@ -9,6 +9,7 @@ from threading import Timer
 import pandas as pd
 from pathlib import Path, PureWindowsPath
 from dateutil.relativedelta import relativedelta
+import prettytable as pt
 
 bot_token_df = pd.read_csv((os.path.join(os.path.dirname(os.getcwd()),"TelegramBotTokens.csv")))
 bot_index = int(bot_token_df.index[bot_token_df['Bot Name'] == 'Hockey Bot'].values)
@@ -297,13 +298,11 @@ def gamecheck(update, context, formatted_team_ids, team_ids):
         context.bot.send_message(chat_id=chat_id_set, text=game_check_msg);
 
 def nextgame(update, context):
-    next_game_check_msg = "what?"
     next_game_request = update.message.text
     team_check = next_game_request [10:].lower()
     nextdf = pd.read_csv(teamsdb, index_col=None) 
-    realteam = team_check in nextdf.TeamName.values
-    if realteam == False:
-        next_game_check_msg = "Sorry I don't know that team"
+    if team_check not in nextdf.TeamName.values:
+        next_game_check_msg = "Sorry I don't know that team."
         context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
         return;
 
@@ -443,7 +442,6 @@ def nextgame(update, context):
                             "," + away_losses + "," + away_ot + ")" + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!")
 
         context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
-    context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
 
 
 
@@ -470,6 +468,9 @@ def helpcmd(update, context):
         "/lastgame <team name>" + "\n" + "find the score of the last game for a team. e.g /lastgame Penguins" + "\n" + "\n" +
         "/notifications" + "\n" + "enable and disable daily game notifications" + "\n" + "\n" + 
         "/status" + "\n" + "get a list of the teams you are following" + "\n" + "and your notification preferences" + "\n" + "\n" + 
+        "/roster <team name>" + "\n" + "get the active roster for a given team e.g /roster Penguins" + "\n" + "\n" + 
+        "/player <team name> <player>" + "\n" + "get the numer, full name, and position for a player" + "\n" + 
+        "provide the Player's number, first name, last name, or full name." + "\n" + " e.g /player Penguins 87 or /player Penguins Crosby" + "\n" + "\n" + 
         "/cupcheck" + "\n" + "Important stats" + "\n" + "\n" + 
         "/help" + "\n" + "opens this list of commands" + "\n" + "\n" + 
         "Thank you for using my bot!" + "\n" + "\n" + 
@@ -608,9 +609,8 @@ def last(update, context):
     last_game_request = update.message.text
     team_check = last_game_request [10:].lower()
     lastdf = pd.read_csv(teamsdb, index_col=None) 
-    realteam = team_check in lastdf.TeamName.values
-    if realteam == False:
-        next_game_check_msg = "Sorry I don't know that team"
+    if team_check not in lastdf.TeamName.values:
+        next_game_check_msg = "Sorry I don't know that team."
         context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
         return;
 
@@ -716,6 +716,88 @@ def cupcheck(update, context):
     cup_msg = ('It has been ' + f_dayssincecup + ' days since the Flyers have won the Stanley Cup.' + '\n' + 'It has been ' + p_dayssincecup + ' days since the Penguins have won the Stanley Cup.'+ '\n' + 'Lets Go Pens!')
     updater.bot.sendMessage(chat_id=update.effective_chat.id, text = cup_msg);
 
+
+# tells the user the roster for a given team
+def roster(update, context):
+    table = pt.PrettyTable(['Number', 'Full Name', 'Position'])
+    table.align['Number'] = 'c'
+    table.align['Full Name'] = 'c'
+    table.align['Position'] = 'l'
+
+    roster_request = update.message.text
+    team_name = roster_request [8:].lower()
+    rosterdf = pd.read_csv(teamsdb, index_col=None) 
+    if team_name not in rosterdf.TeamName.values:
+        next_game_check_msg = "Sorry I don't know that team."
+        context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
+        return;
+    teamID = int(rosterdf.loc[rosterdf.TeamName == team_name, 'TeamID'])
+    api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster'
+    r = requests.get(api_url)
+    team_data = r.json() 
+    roster = team_data['teams'][0]['roster']['roster']
+    team = json.dumps(team_data['teams'][0]['name'], ensure_ascii=False).encode('utf8')
+    team_fin = team[1:-1]
+    team_dec = str(team_fin.decode("utf8"))
+    rosterlist = []
+    print(type(rosterlist))
+    for player in roster:
+        name = player['person']['fullName']
+        number = int(player['jerseyNumber'])
+        position = player['position']['name']
+        table.add_row([number, name, position])
+    table.title = 'Team Roster For The ' + team_dec
+    sorted_table = table.get_string(sortby='Number')
+    updater.bot.sendMessage(chat_id=update.effective_chat.id, text = f'<pre>{sorted_table}</pre>', parse_mode=ParseMode.HTML);
+
+        
+
+def player(update, context):
+    player_request = update.message.text
+    if player_request.count(' ') > 3:
+        player_msg = "One player at a time please."
+        context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
+        return;
+    if player_request.count(' ') == 3:
+        team_name, player_first, player_last = player_request [8:].lower().split(' ')
+        player_info = player_first + ' ' + player_last
+    if player_request.count(' ') < 3:    
+        team_name, player_info = player_request [8:].lower().split(' ')
+    if player_info.isnumeric():
+        player_info = int(player_info)
+    rosterdf = pd.read_csv(teamsdb, index_col=None) 
+    if team_name not in rosterdf.TeamName.values:
+        player_msg = "Sorry I don't know that team."
+        context.bot.send_message(chat_id=update.effective_chat.id, text=player_msg);
+        return;
+    teamID = int(rosterdf.loc[rosterdf.TeamName == team_name, 'TeamID'])
+    api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster'
+    r = requests.get(api_url)
+    team_data = r.json() 
+    team = json.dumps(team_data['teams'][0]['name'], ensure_ascii=False).encode('utf8')
+    team_fin = team[1:-1]
+    team_dec = str(team_fin.decode("utf8"))
+    roster = team_data['teams'][0]['roster']['roster']
+    found = 0
+    for player in roster:
+        number = int(player['jerseyNumber'])
+        print(number)
+        print(player_info)
+        name = player['person']['fullName']
+        first, last = name.split(' ')
+        if number == player_info or first.lower() == player_info or last.lower() == player_info or name.lower() == player_info:
+            name = player['person']['fullName']
+            number = player['jerseyNumber']
+            position = player['position']['name']
+            player_msg =( number + '\n' + name + '\n' + position)
+            found = 1
+    if found == 0:
+        player_info = str(player_info)
+        player_msg = 'I cant find ' + player_info + ' on The ' + team_dec
+    context.bot.send_message(chat_id=update.effective_chat.id, text=player_msg)
+
+
+
 #DEBUG sends what the bot thinks today is
 def today(update, context):
     today_msg = str(todays_date)
@@ -758,6 +840,8 @@ dispatcher.add_handler(CommandHandler('lastgame', last))
 dispatcher.add_handler(CommandHandler('notifications', notifications))
 dispatcher.add_handler(CommandHandler('status', status))
 dispatcher.add_handler(CommandHandler('cupcheck', cupcheck))
+dispatcher.add_handler(CommandHandler('roster', roster))
+dispatcher.add_handler(CommandHandler('player', player))
 dispatcher.add_handler(CommandHandler('stop', stop))
 dispatcher.add_handler(CommandHandler('testautonotify', testautonotify))
 
