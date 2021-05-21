@@ -54,7 +54,6 @@ def seasoncheck(chat_id_set, autonotify):
     r = requests.get(api_url)
     json = r.json() 
     numofgame = json['totalItems']
-    print(numofgame)
     if numofgame == 0:
         if autonotify == 1:
             return False;
