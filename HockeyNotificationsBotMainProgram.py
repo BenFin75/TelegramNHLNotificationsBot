@@ -624,13 +624,13 @@ def roster(update, context):
     #gets the team name the user submitted
     roster_request = update.message.text
     team_name = roster_request [8:].lower()
-    teamdf = pd.read_csv(teamsdb, index_col=None) 
 
     #check if the user submitted a supported team name
     if not teamdatabasecheck (update, context, team_name):
         return;
 
     #searches the api for the team name
+    teamdf = pd.read_csv(teamsdb, index_col=None) 
     teamID = int(teamdf.loc[teamdf.TeamName == team_name, 'TeamID'])
     api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster'
     r = requests.get(api_url)
@@ -673,6 +673,7 @@ def player(update, context):
         return;
 
     #Seaches the api for requested player
+    teamdf = pd.read_csv(teamsdb, index_col=None) 
     teamID = int(teamdf.loc[teamdf.TeamName == team_name, 'TeamID'])
     api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster'
     r = requests.get(api_url)
@@ -682,7 +683,8 @@ def player(update, context):
     for player in roster:
         number = int(player['jerseyNumber'])
         name = player['person']['fullName']
-        if number == player_info or player_info in name.lower():
+        first, last = name.split(' ')
+        if number == player_info or first.lower() == player_info or last.lower() == player_info or name.lower() == player_info:
             number = player['jerseyNumber']
             position = player['position']['name']
             player_msg =( number + '\n' + name + '\n' + position)
