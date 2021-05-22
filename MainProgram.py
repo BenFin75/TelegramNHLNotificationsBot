@@ -1,4 +1,5 @@
 # -----------------------------------------------------------
+# NHL Game Notifications Bot
 # Telegram bot for receiving daily NHL game notifications 
 # as well other information about the league and palyers
 #
@@ -607,7 +608,7 @@ def cupcheck(update, context):
     p_sincecup = p_Date - todays_date
     p_dayssincecup = str(p_sincecup.days)[1:]
 
-    cup_msg = ('It has been ' + f_dayssincecup + ' days since the Flyers have won the Stanley Cup.' + '\n' + 'It has been ' + p_dayssincecup + ' days since the Penguins have won the Stanley Cup.'+ '\n' + 'Lets Go Pens!')
+    cup_msg = ('It has been ' + f_dayssincecup + ' days since the Flyers have won the Stanley Cup.' + '\n' + 'It has only been ' + p_dayssincecup + ' days since the Penguins have won the Stanley Cup.'+ '\n' + 'Lets Go Pens!')
     updater.bot.sendMessage(chat_id=update.effective_chat.id, text = cup_msg);
 
 
