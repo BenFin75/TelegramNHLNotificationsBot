@@ -504,6 +504,7 @@ def last(update, context):
     """
     last_game_request = update.message.text
     team_name = last_game_request [10:].lower()
+    lastdf = pd.read_csv(teamsdb, index_col=None) 
 
     if not teamdatabasecheck (update, context, team_name):
         return;
