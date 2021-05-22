@@ -199,7 +199,7 @@ def button(update: Update, context: CallbackContext):
             )
         #removes the text sent with the buttons and replaces it with a new message
         context.bot.deleteMessage(update.callback_query.message.chat.id, update.callback_query.message.message_id)
-        setup_msg = 'Your team preferences have been updated!'
+        setup_msg = ('Your team preferences have been updated!' + '\n' + 'You can use /notifications to enable daily notifications.')
         context.bot.send_message(chat_id=update.effective_chat.id, text=setup_msg)
         databasemanagementteams(formatted_team_ids, team_ids)
         game(update, context);
