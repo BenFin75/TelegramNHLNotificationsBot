@@ -105,7 +105,7 @@ def helpcmd(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=help_msg, disable_web_page_preview=1);
 
 
-def setup(update: Update, context: CallbackContext):
+def setup(update, context: CallbackContext):
     """
         The command to allow the user to select which teams they wish to follow
         these teams are the teams checked for with /game and by the automatic notifications
@@ -180,7 +180,7 @@ def setup(update: Update, context: CallbackContext):
         reply_markup=reply_buttons
     )
 
-def button(update: Update, context: CallbackContext):
+def button(update, context: CallbackContext):
     """
         This is the handler for the buttons called in other funtions
         When the buttons are clicked this function receives the output
@@ -199,10 +199,11 @@ def button(update: Update, context: CallbackContext):
             )
         #removes the text sent with the buttons and replaces it with a new message
         context.bot.deleteMessage(update.callback_query.message.chat.id, update.callback_query.message.message_id)
-        setup_msg = ('Your team preferences have been updated!' + '\n' + 'You can use /notifications to enable daily notifications.')
+        setup_msg = ('Your team preferences have been updated!')
         context.bot.send_message(chat_id=update.effective_chat.id, text=setup_msg)
         databasemanagementteams(formatted_team_ids, team_ids)
-        game(update, context);
+        game(update, context)
+        notifications(update, context);
 
     #The button handler for turning on notifications for a user
     if update.callback_query.data == 'yes':
@@ -543,7 +544,7 @@ def last(update, context):
     updater.bot.sendMessage(chat_id=update.effective_chat.id, text = last_game_msg);
 
 
-def notifications(update: Update, context: CallbackContext):
+def notifications(update, context: CallbackContext):
     """
         Allows the user to select whether or not they want daily notifications
     """
@@ -559,10 +560,10 @@ def notifications(update: Update, context: CallbackContext):
                 InlineKeyboardButton("No", callback_data='no')
             ],    
         ])
-        update.message.reply_text(
+        update.effective_message.reply_text(
             f'Would you like daily game notifications?' + "\n" + "Notifications are sent at 8am est.", reply_markup=reply_buttons
             )
-        return;
+        return False;
     updater.bot.sendMessage(chat_id=update.effective_chat.id, text = "Please run /setup first!");
 
 
