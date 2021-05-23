@@ -7,6 +7,8 @@ The bot was created using
 
 https://github.com/python-telegram-bot/python-telegram-bot
 
+also I would like to thank the people at https://gitlab.com/dword4/nhlapi for all their work documenting the NHL API.
+
 
 This is my first python project, constructive feedback for improvement is welcome!  
 I hope you like it!
