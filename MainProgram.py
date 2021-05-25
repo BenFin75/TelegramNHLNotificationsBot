@@ -723,6 +723,9 @@ def player(update, context):
     r = requests.get(api_url)
     team_data = r.json() 
     roster = team_data['teams'][0]['roster']['roster']
+    team = json.dumps(team_data['teams'][0]['name'], ensure_ascii=False).encode('utf8')
+    team_fin = team[1:-1]
+    team_dec = str(team_fin.decode("utf8"))
     found = 0
     for player in roster:
         number = int(player['jerseyNumber'])
@@ -734,8 +737,13 @@ def player(update, context):
             player_msg =( number + '\n' + name + '\n' + position)
             found = 1
     if found == 0:
-        player_info = str(player_info)
-        player_msg = 'I cant find ' + player_info + ' on The ' + team_dec
+    	player_info = str(player_info)
+    	if player_info.isnumeric():
+    		player_msg = 'I cant find number ' + player_info + ' on The ' + team_dec
+    	else:
+    		player_name_cap = player_info.capitalize()
+    		player_msg = 'I cant find anyone named ' + player_name_cap + ' on The ' + team_dec
+
     context.bot.send_message(chat_id=update.effective_chat.id, text=player_msg)
 
 
