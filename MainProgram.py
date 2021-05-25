@@ -741,7 +741,7 @@ def player(update, context):
     	if player_info.isnumeric():
     		player_msg = 'I cant find number ' + player_info + ' on The ' + team_dec
     	else:
-    		player_name_cap = player_info.capitalize()
+    		player_name_cap = player_info.title()
     		player_msg = 'I cant find anyone named ' + player_name_cap + ' on The ' + team_dec
 
     context.bot.send_message(chat_id=update.effective_chat.id, text=player_msg)
