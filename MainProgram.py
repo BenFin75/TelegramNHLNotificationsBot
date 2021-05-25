@@ -6,7 +6,7 @@
 # Created by Benjamin Finley
 # Code is availible on GitHub @ https://github.com/Hiben75/TelegramNHLNotifcationBot
 # 
-# Version 1.3.2
+# Version 1.3.3
 # Status: Active
 #
 # -----------------------------------------------------------
@@ -282,22 +282,44 @@ def nextgame(update, context):
     if not teamdatabasecheck (update, context, team_name):
         return;
 
-    teamid__next_raw = nextdf.loc[nextdf.TeamName == team_name, 'TeamID']
-    teamid__next = int(teamid__next_raw.values)
-    api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamid__next}?expand=team.schedule.next'
+    teamid_next_raw = nextdf.loc[nextdf.TeamName == team_name, 'TeamID']
+    teamid_next = int(teamid_next_raw.values)
+    api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamid_next}?expand=team.schedule.next'
     r = requests.get(api_url)
     next_game = r.json()
     autonotify = 0
     chat_id_set = update.effective_chat.id
     if not seasoncheck(chat_id_set, autonotify):
         return;
-
     elimcheck = json.dumps(next_game['teams'][0])
     if 'nextGameSchedule' not in elimcheck:
-        team_name = json.dumps(next_game['teams'][0]['name']).strip('"')
-        next_game_check_msg = ("Ha, The " + team_name + " has been eliminated from Stanley Cup Contention. Sucks to suck")
-        context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
-        return;
+        formatted_teams_df = nextdf.loc[nextdf['Formatted'] == 1]
+        teamid_name_form = str(formatted_teams_df.loc[formatted_teams_df.TeamID == teamid_next, 'TeamName'].values).strip("'[]")
+        apiL_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamid_next}?expand=team.schedule.previous'
+        rL = requests.get(apiL_url)
+        last_game = rL.json()
+        playoff_check = json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gameType']).strip('\"')
+        away_team_score = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['away']['score']))
+        home_team_score = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['home']['score']))
+        away_team_id = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['away']['team']['id']))
+        home_team_id = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['home']['team']['id']))
+        print(away_team_score)
+        print(home_team_score)
+        print(away_team_id)
+        print(home_team_id)
+        print("ha" + str(teamid_next))
+        if away_team_score > home_team_score and away_team_id == teamid_next and playoff_check == 'P' or home_team_score > away_team_score and home_team_id == teamid_next and playoff_check == 'P':
+            next_game_check_msg = (
+                                    "The " + teamid_name_form + " have won their playoff series." + "\n" + "The next game has yet to be scheduled." + "\n" + "\n" +
+                                    "This is probably due to the next opponent still playing their series." + "\n" + 
+                                    "Please check back later."
+                                    )
+            context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
+            return;
+        else:
+            next_game_check_msg = ("Ha, The " + teamid_name_form + " have been eliminated from Stanley Cup Contention. Sucks to suck")
+            context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg);
+            return;
 
     #the encoding is so that Montréal has its é, can't forget that
     away_team =  json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
@@ -344,16 +366,19 @@ def nextgame(update, context):
            trailing_games = str(away_games_won)
         tie_check = away_games_won - home_games_won
         if tie_check != 0:
-           next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+            if leading_games ==1:
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+              + "The " + leading_team + " Lead " + leading_games + " game to " + trailing_games + "!")
+            else:
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
               + "The " + leading_team + " Lead " + leading_games + " games to " + trailing_games + "!")
-           updater.bot.sendMessage(chat_id=update.effective_chat.id, text = next_game_check_msg);
+            updater.bot.sendMessage(chat_id=update.effective_chat.id, text = next_game_check_msg);
         if tie_check == 0:
+            home_games_won_str = str(home_games_won)
             if home_games_won ==1:
-                home_games_won_str = str(home_games_won)
                 next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
                  + "The series is tied at "+ home_games_won_str + " game!")
             else:
-                home_games_won_str = str(home_games_won)
                 next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
                  + "The series is tied at "+ home_games_won_str + " games!")
             updater.bot.sendMessage(chat_id=update.effective_chat.id, text = next_game_check_msg);
@@ -396,37 +421,45 @@ def gamecheck(chat_id_set, number_of_teams, team_data):
 
         if playoff_check == 'P':
 
-           away_wins_int = int(away_wins)
-           home_wins_int = int(home_wins)
-           away_games_won = away_wins_int % 4 
-           home_games_won = home_wins_int % 4
-           if  away_games_won > home_games_won:
-              leading_team = away_team_dec
-              leading_games = str(away_games_won)
-              trailing_games = str(home_games_won)
-           if  away_games_won < home_games_won:
-              leading_team = home_team_dec
-              leading_games = str(home_games_won)
-              trailing_games = str(away_games_won)
+            away_wins_int = int(away_wins)
+            home_wins_int = int(home_wins)
+            away_games_won = away_wins_int % 4 
+            home_games_won = home_wins_int % 4
+            if  away_games_won > home_games_won:
+                leading_team = away_team_dec
+                leading_games = str(away_games_won)
+                trailing_games = str(home_games_won)
+            if  away_games_won < home_games_won:
+                leading_team = home_team_dec
+                leading_games = str(home_games_won)
+                trailing_games = str(away_games_won)
 
-           tie_check = away_games_won - home_games_won
-           if tie_check != 0:
-              game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
-                 + "The " + leading_team + " Lead " + leading_games + " games to " + trailing_games + "!")
-              updater.bot.sendMessage(chat_id=chat_id_set, text = game_check_msg);
+            tie_check = away_games_won - home_games_won
+            if tie_check != 0:
+                if leading_games ==1:
+                    game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
+                     + "The " + leading_team + " Lead " + leading_games + " game to " + trailing_games + "!")
+                else:
+                     game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
+                + "The " + leading_team + " Lead " + leading_games + " games to " + trailing_games + "!")
+                updater.bot.sendMessage(chat_id=chat_id_set, text = game_check_msg);
 
-           if tie_check == 0:
-               home_games_won_str = str(home_games_won)
-               game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
-                + "The series is tied at "+ home_games_won_str + " games!")
-               updater.bot.sendMessage(chat_id=chat_id_set, text = game_check_msg);
+            if tie_check == 0:
+                home_games_won_str = str(home_games_won)
+                if home_games_won ==1:
+                    game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
+                     + "The series is tied at "+ home_games_won_str + " game!")
+                else:
+                    game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n"
+                     + "The series is tied at "+ home_games_won_str + " games!")
+                updater.bot.sendMessage(chat_id=chat_id_set, text = game_check_msg);
 
-           if playoff_check == 'R':
-               away_ot =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['leagueRecord']['ot'])
-               home_ot =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['ot'])
-               game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + " at " + game_time_est + " est!" + "\n"
+            if playoff_check == 'R':
+                away_ot =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['leagueRecord']['ot'])
+                home_ot =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['ot'])
+                game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + " at " + game_time_est + " est!" + "\n"
                                 + "The " + leading_team + " Lead " + leading_games + " games to" + trailing_games + "!")
-               updater.bot.sendMessage(chat_id=chat_id_set, text = game_check_msg);
+                updater.bot.sendMessage(chat_id=chat_id_set, text = game_check_msg);
     return;
 
 
@@ -513,9 +546,9 @@ def last(update, context):
 
     api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamid_last}?expand=team.schedule.previous'
     r = requests.get(api_url)
-    next_game = r.json()
+    last_game = r.json()
 
-    game_pk =  json.dumps(next_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gamePk'])
+    game_pk =  json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gamePk'])
     api2_url = f'https://statsapi.web.nhl.com/api/v1/game/{game_pk}/feed/live'
     r2 = requests.get(api2_url)
     last_game_stats = r2.json()
@@ -530,12 +563,20 @@ def last(update, context):
     away_team_score =  json.dumps(last_game_stats['liveData']['linescore']['teams']['away']['goals'])
     home_team_score =  json.dumps(last_game_stats['liveData']['linescore']['teams']['home']['goals'])
     overtime_check =  int(json.dumps(last_game_stats['liveData']['linescore']['currentPeriod']))
+    playoff_check = json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gameType']).strip('\"')
 
-    if overtime_check == 3:
+    if playoff_check == 'P':
+        if overtime_check == 3:
+            overtime_msg = ''
+        if overtime_check > 3:
+            overtime_check -= 3
+            overtime_check_str = str(overtime_check)
+            overtime_msg = 'In Overtime ' + overtime_check_str + '!'
+    elif overtime_check == 3:
         overtime_msg = ''
-    if overtime_check == 4:
+    elif overtime_check == 4:
         overtime_msg = 'In Overtime!'
-    if overtime_check == 5:
+    elif overtime_check == 5:
         overtime_msg = 'In a Shootout!'
     if away_team_score > home_team_score:
         last_game_msg = ("The " + away_team_dec + ":    " + away_team_score + "\n" + " The " + home_team_dec + ":    " + home_team_score + "\n" + overtime_msg)
