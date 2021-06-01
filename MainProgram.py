@@ -6,7 +6,7 @@
 # Created by Benjamin Finley
 # Code is availible on GitHub @ https://github.com/Hiben75/TelegramNHLNotifcationBot
 # 
-# Version 1.3.3
+# Version 1.4.0
 # Status: Active
 #
 # -----------------------------------------------------------
@@ -87,16 +87,18 @@ def helpcmd(update, context):
     """
     help_msg = (
         "Here is a list of my commands:" + "\n" + "\n" + 
-        "/setup" + "\n" + "select which teams you would like notifications for" + "\n" + "\n" + 
-        "/game" + "\n" + "manually check if a team you selected has a game today" + "\n" + "\n" + 
-        "/nextgame <team name>" + "\n" + "find the time of the next game for a team. e.g. /nextgame Penguins" + "\n" + "\n" + 
-        "/lastgame <team name>" + "\n" + "find the score of the last game for a team. e.g /lastgame Penguins" + "\n" + "\n" +
-        "/notifications" + "\n" + "enable and disable daily game notifications" + "\n" + "\n" + 
-        "/status" + "\n" + "get a list of the teams you are following" + "\n" + "and your notification preferences" + "\n" + "\n" + 
-        "/roster <team name>" + "\n" + "get the active roster for a given team e.g /roster Penguins" + "\n" + "\n" + 
-        "/player <team name> <player>" + "\n" + "get the numer, full name, and position for a player" + "\n" + 
-        "provide the Player's number, first name, last name, or full name." + "\n" + " e.g /player Penguins 87 or /player Penguins Crosby" + "\n" + "\n" + 
+        "/setup"                       + "\n" + "select which teams you would like notifications for" + "\n" + "\n" + 
+        "/game"                        + "\n" + "manually check if a team you selected has a game today" + "\n" + "\n" + 
+        "/nextgame <team name>"        + "\n" + "find the time of the next game for a team. e.g. /nextgame Penguins" + "\n" + "\n" + 
+        "/lastgame <team name>"        + "\n" + "find the score of the last game for a team. e.g /lastgame Penguins" + "\n" + "\n" +
+        "/notifications"               + "\n" + "enable and disable daily game notifications" + "\n" + "\n" + 
+        "/status"                      + "\n" + "get a list of the teams you are following" + "\n" + "and your notification preferences" + "\n" + "\n" + 
+        "/roster <team name>"          + "\n" + "get the active roster for a given team e.g /roster Penguins" + "\n" + "\n" + 
+        "/player <team name> <player>" + "\n" + "get the numer, full name, and position for a player" + "\n" + " e.g /player Penguins 87 or /player Penguins Crosby" + "\n" + "\n" + 
+        "/stats <team name>"           + "\n" + "/stats <team name> <player>"  + "\n" + "get the regular season stats for a given team or player" + "\n" + " e.g /stats Penguins, /stats Penguins 87, or /stats Penguins Crosby" + "\n" + "\n" + 
+        "/standings <division name>"  + "\n" + "get the standings for a given division e.g /standings East" + "\n" + "If left blank /standings will retrun all division stnadings" "\n" + "\n" + 
         "/cupcheck" + "\n" + "Important stats" + "\n" + "\n" + 
+        "/removeMe" + "\n" + "Delete your teams and notification data." + "\n" + "\n" + 
         "/help" + "\n" + "opens this list of commands" + "\n" + "\n" + 
         "Thank you for using my bot!" + "\n" + "\n" + 
         "Made by Ben Finley" + "\n" + 
@@ -153,7 +155,7 @@ def setup(update, context: CallbackContext):
             InlineKeyboardButton("Predators", callback_data=18),
             InlineKeyboardButton("Blues", callback_data=19),
             InlineKeyboardButton("Flames", callback_data=20),
-            InlineKeyboardButton("Colorado", callback_data=21),
+            InlineKeyboardButton("Avs", callback_data=21),
             InlineKeyboardButton("Oilers", callback_data=22)
         ],
         [
@@ -227,11 +229,33 @@ def button(update, context: CallbackContext):
         updater.bot.sendMessage(chat_id=update.effective_chat.id, text = "You will not receive Notifications!")
         databasemanagementnotifications(chat_id_noti, notification_pref);
 
+    if update.callback_query.data == 'bye':
+        chatsdf = pd.read_csv(chatdb)
+        chat_index = chatsdf.index[chatsdf['ChatID'] == chat_id_noti].values
+        chatsdf_removed = chatsdf[chatsdf['ChatID'] != chat_id_noti]
+        chatsdf_removed.to_csv(chatdb, index = False, header=True)
+        update.callback_query.answer()
+        update.callback_query.message.edit_reply_markup(
+            reply_markup=InlineKeyboardMarkup([])
+            )
+        context.bot.deleteMessage(update.callback_query.message.chat.id, update.callback_query.message.message_id)
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = "Your team and notification data has been deleted." + "\n" + "You can run /setup to start again." + "\n" + "Thanks for using my bot, bye!")
+
+    if update.callback_query.data == 'stay':
+        update.callback_query.answer()
+        update.callback_query.message.edit_reply_markup(
+            reply_markup=InlineKeyboardMarkup([])
+            )
+        context.bot.deleteMessage(update.callback_query.message.chat.id, update.callback_query.message.message_id)
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = "Your team and notification data are safe")
+
     #adds the users team selection to their list of followed teams
-    update.callback_query.answer()
-    val = update.callback_query.data
-    team_ids.append(val)
-    formatted_team_ids = ','.join(team_ids);
+    other_buttons = ['✔️', 'yes', 'no', 'bye', 'stay']
+    if update.callback_query.data not in other_buttons:
+        update.callback_query.answer()
+        val = update.callback_query.data
+        team_ids.append(val)
+        formatted_team_ids = ','.join(team_ids);
 
 
 def databasemanagementteams(formatted_team_ids, team_ids):
@@ -277,6 +301,9 @@ def nextgame(update, context):
         for the team submitted by the user
     """
     next_game_request = update.message.text
+    if next_game_request.count(' ') == 0:
+        context.bot.send_message(chat_id=update.effective_chat.id, text=("Please indicate the team you want the next game for." + '\n'+ "e.g. /nextgame Pens"));
+        return;
     team_name = next_game_request [10:].lower()
     nextdf = pd.read_csv(teamsdb, index_col=None) 
     if not teamdatabasecheck (update, context, team_name):
@@ -298,16 +325,11 @@ def nextgame(update, context):
         apiL_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamid_next}?expand=team.schedule.previous'
         rL = requests.get(apiL_url)
         last_game = rL.json()
-        playoff_check = json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gameType']).strip('\"')
+        playoff_check =       json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gameType']).strip('\"')
         away_team_score = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['away']['score']))
         home_team_score = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['home']['score']))
-        away_team_id = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['away']['team']['id']))
-        home_team_id = int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['home']['team']['id']))
-        print(away_team_score)
-        print(home_team_score)
-        print(away_team_id)
-        print(home_team_id)
-        print("ha" + str(teamid_next))
+        away_team_id =    int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['away']['team']['id']))
+        home_team_id =    int(json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['teams']['home']['team']['id']))
         if away_team_score > home_team_score and away_team_id == teamid_next and playoff_check == 'P' or home_team_score > away_team_score and home_team_id == teamid_next and playoff_check == 'P':
             next_game_check_msg = (
                                     "The " + teamid_name_form + " have won their playoff series." + "\n" + "The next game has yet to be scheduled." + "\n" + "\n" +
@@ -322,16 +344,16 @@ def nextgame(update, context):
             return;
 
     #the encoding is so that Montréal has its é, can't forget that
-    away_team =  json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
+    away_team =     json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
     away_team_fin = away_team[1:-1]
     away_team_dec = str(away_team_fin.decode("utf8"))
-    away_wins =  json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['away']['leagueRecord']['wins'])
-    away_losses =  json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['away']['leagueRecord']['losses'])
-    home_team =  json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['team']['name'], ensure_ascii=False).encode('utf8')
+    away_wins =     json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['away']['leagueRecord']['wins'])
+    away_losses =   json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['away']['leagueRecord']['losses'])
+    home_team =     json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['team']['name'], ensure_ascii=False).encode('utf8')
     home_team_fin = home_team[1:-1]
     home_team_dec = str(home_team_fin.decode("utf8"))
-    home_wins =  json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['leagueRecord']['wins'])
-    home_losses =  json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['leagueRecord']['losses'])
+    home_wins =     json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['leagueRecord']['wins'])
+    home_losses =   json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['leagueRecord']['losses'])
     game_fulltime = json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['gameDate'])
     game_day = game_fulltime[1:-11]
     game_day_obj = datetime.strptime(game_day, '%Y-%m-%d')
@@ -403,16 +425,16 @@ def gamecheck(chat_id_set, number_of_teams, team_data):
         number_of_teams = number_of_teams - 1
 
         #the encoding is so that Montréal has its é, can't forget that
-        away_team =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
+        away_team =    json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
         away_team_fin = away_team[1:-1]
         away_team_dec = str(away_team_fin.decode("utf8"))
-        away_wins =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['leagueRecord']['wins'])
+        away_wins =    json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['leagueRecord']['wins'])
         away_losses =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['leagueRecord']['losses'])
-        home_team =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['team']['name'], ensure_ascii=False).encode('utf8')
+        home_team =    json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['team']['name'], ensure_ascii=False).encode('utf8')
         home_team_fin = home_team[1:-1]
         home_team_dec = str(home_team_fin.decode("utf8"))
-        home_wins =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['wins'])
-        home_losses =  json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['losses'])
+        home_wins =     json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['wins'])
+        home_losses =   json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['losses'])
         game_fulltime = json.dumps(team_data['dates'][0]['games'][number_of_teams]['gameDate'])
         game_time = game_fulltime[12:-2]
         game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
@@ -471,8 +493,9 @@ def game(update, context):
     chatsdf = pd.read_csv(chatdb)
     chat_index = int(chatsdf.index[chatsdf['ChatID'] == chat_id_set].values)
     chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
+    if str(chat_team_ids) == '[[nan]]':
+        return;
     formatted_chat_team_ids = str(chat_team_ids)[3:-3]
-
     api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
     r = requests.get(api_url)
     team_data = r.json() 
@@ -536,6 +559,9 @@ def last(update, context):
     If the game is a playoff game the seiers standings will be returned as well
     """
     last_game_request = update.message.text
+    if last_game_request.count(' ') == 0:
+        context.bot.send_message(chat_id=update.effective_chat.id, text=("Please indicate the team you want the last game for." + '\n'+ "e.g. /lastgame Pens"));
+        return;
     team_name = last_game_request [10:].lower()
     lastdf = pd.read_csv(teamsdb, index_col=None) 
 
@@ -554,16 +580,16 @@ def last(update, context):
     last_game_stats = r2.json()
 
     #the encoding is so that Montréal has its é, can't forget that
-    home_team =  json.dumps(last_game_stats['liveData']['linescore']['teams']['home']['team']['name'], ensure_ascii=False).encode('utf8')
+    home_team =           json.dumps(last_game_stats['liveData']['linescore']['teams']['home']['team']['name'], ensure_ascii=False).encode('utf8')
     home_team_fin = home_team[1:-1]
     home_team_dec = str(home_team_fin.decode("utf8"))
-    away_team =  json.dumps(last_game_stats['liveData']['linescore']['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
+    away_team =           json.dumps(last_game_stats['liveData']['linescore']['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
     away_team_fin = away_team[1:-1]
     away_team_dec = str(away_team_fin.decode("utf8"))
-    away_team_score =  json.dumps(last_game_stats['liveData']['linescore']['teams']['away']['goals'])
-    home_team_score =  json.dumps(last_game_stats['liveData']['linescore']['teams']['home']['goals'])
+    away_team_score =     json.dumps(last_game_stats['liveData']['linescore']['teams']['away']['goals'])
+    home_team_score =     json.dumps(last_game_stats['liveData']['linescore']['teams']['home']['goals'])
     overtime_check =  int(json.dumps(last_game_stats['liveData']['linescore']['currentPeriod']))
-    playoff_check = json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gameType']).strip('\"')
+    playoff_check =       json.dumps(last_game['teams'][0]['previousGameSchedule']['dates'][0]['games'][0]['gameType']).strip('\"')
 
     if playoff_check == 'P':
         if overtime_check == 3:
@@ -602,7 +628,7 @@ def notifications(update, context: CallbackContext):
                 InlineKeyboardButton("No", callback_data='no')
             ],    
         ])
-        update.effective_message.reply_text(
+        updater.bot.sendMessage(chat_id=chat_id_set, text=
             f'Would you like daily game notifications?' + "\n" + "Notifications are sent at 8am est.", reply_markup=reply_buttons
             )
         return False;
@@ -619,6 +645,9 @@ def status(update, context):
     chatsdf = pd.read_csv(chatdb)
     team_names_df = pd.read_csv(teamsdb, encoding = "ISO-8859-1")
     users_team_ids = list(chatsdf.loc[chatsdf['ChatID'] == chat_id_status, 'TeamIDs'].values)
+    if users_team_ids == []:
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = "You have no data, please run /setup first!")
+        return;
     users_team_ids_form = str(users_team_ids)[2:-2]
     users_team_ids_list = [int(x) for x in users_team_ids_form.split(',')]
     formatted_teams_df = team_names_df.loc[team_names_df['Formatted'] == 1]
@@ -661,13 +690,14 @@ def roster(update, context):
     """
     #setsp formatting for table
     table = pt.PrettyTable(['Number', 'Full Name', 'Position'])
-    table.align['Number'] = 'c'
-    table.align['Full Name'] = 'c'
     table.align['Position'] = 'l'
 
     #gets the team name the user submitted
     roster_request = update.message.text
     team_name = roster_request [8:].lower()
+    if roster_request.count(' ') == 0:
+        context.bot.send_message(chat_id=update.effective_chat.id, text=("Please indicate the team you want the roster of." + '\n'+ "e.g. /roster Pens"));
+        return;
 
     #check if the user submitted a supported team name
     if not teamdatabasecheck (update, context, team_name):
@@ -684,8 +714,8 @@ def roster(update, context):
     team_fin = team[1:-1]
     team_dec = str(team_fin.decode("utf8"))
     for player in roster:
-        name = player['person']['fullName']
-        number = player['jerseyNumber']
+        name =     player['person']['fullName']
+        number =   int(player['jerseyNumber'])
         position = player['position']['name']
         table.add_row([number, name, position])
     table.title = 'Team Roster For The ' + team_dec
@@ -701,6 +731,9 @@ def player(update, context):
     """
     #formats the users message to search the api for the player
     player_request = update.message.text
+    if player_request.count(' ') == 0:
+        context.bot.send_message(chat_id=update.effective_chat.id, text=("Please indicate a team and player." + '\n'+ "e.g. /player Pens Crosby"));
+        return;
     if player_request.count(' ') > 3:
         context.bot.send_message(chat_id=update.effective_chat.id, text="One player at a time please.");
         return;
@@ -729,7 +762,7 @@ def player(update, context):
     found = 0
     for player in roster:
         number = int(player['jerseyNumber'])
-        name = player['person']['fullName']
+        name =       player['person']['fullName']
         first, last = name.split(' ')
         if number == player_info or first.lower() == player_info or last.lower() == player_info or name.lower() == player_info:
             number = player['jerseyNumber']
@@ -745,6 +778,192 @@ def player(update, context):
     		player_msg = 'I cant find anyone named ' + player_name_cap + ' on The ' + team_dec
 
     context.bot.send_message(chat_id=update.effective_chat.id, text=player_msg)
+
+
+def stats(update, context):
+    """
+        Returns the regular season stats for
+        a team or a player submitted by the user
+    """
+    stats_request = update.message.text
+    if stats_request.count(' ') == 0:
+        context.bot.send_message(chat_id=update.effective_chat.id, text=("Please indicate a team and/or player." + '\n'+ "e.g. /stats Pens " + " "*3 + "or" + " " *3 + "/stats Pens Crosby"));
+        return;
+    if stats_request.count(' ') > 3:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="One player or team at a time please.");
+        return;
+    if stats_request.count(' ') == 3:
+        team_name, fname, lname = stats_request [7:].lower().split(' ')
+        player_info = fname + ' ' + lname
+        teamstats = 0
+    if stats_request.count(' ') == 2:    
+        team_name, player_info = stats_request [7:].lower().split(' ')
+        teamstats = 0
+    if stats_request.count(' ') == 1:    
+        team_name = stats_request [7:].lower()
+        teamstats = 1
+    if not teamdatabasecheck (update, context, team_name):
+        return;
+
+    # If the user asks for the stats from a player
+    if teamstats == 0:
+        table = pt.PrettyTable(
+            ['Games Played', 'Goals', 'Assists', 'Points', 'Penalty Minutes', '+/-']
+            )
+        teamdf = pd.read_csv(teamsdb, index_col=None) 
+        teamID = int(teamdf.loc[teamdf.TeamName == team_name, 'TeamID'])
+        if player_info.isnumeric():
+            player_info = int(player_info)
+        api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster'
+        r = requests.get(api_url)
+        player_data = r.json() 
+        team = json.dumps(player_data['teams'][0]['name'], ensure_ascii=False).encode('utf8')
+        team_fin = team[1:-1]
+        team_dec = str(team_fin.decode("utf8"))
+        found = 0
+        for n in player_data['teams'][0]['roster']['roster']:
+            number = int(n['jerseyNumber'])
+            name = n['person']['fullName']
+            first, last = name.split(' ')
+            if number == player_info or first.lower() == player_info or last.lower() == player_info or name.lower() == player_info:
+                player_id = n['person']['id']
+                player_name = n['person']['fullName']
+                found = 1
+
+        if found == 0:
+            player_info = str(player_info)
+            if player_info.isnumeric():
+                player_msg = 'I cant find number ' + player_info + ' on The ' + team_dec
+            else:
+                player_name_cap = player_info.title()
+                player_msg = 'I cant find anyone named ' + player_name_cap + ' on The ' + team_dec
+            updater.bot.sendMessage(chat_id=update.effective_chat.id, text=player_msg)
+            return;
+
+        stats_url = f'https://statsapi.web.nhl.com/api/v1/people/{player_id}/stats?stats=statsSingleSeason'
+        r_stats = requests.get(stats_url)
+        player_stats = r_stats.json() 
+
+        games =     player_stats['stats'][0]['splits'][0]['stat']['games']
+        goals =     player_stats['stats'][0]['splits'][0]['stat']['goals']
+        assists =   player_stats['stats'][0]['splits'][0]['stat']['assists']
+        points =    player_stats['stats'][0]['splits'][0]['stat']['games']
+        pim =       player_stats['stats'][0]['splits'][0]['stat']['pim']
+        plusminus = player_stats['stats'][0]['splits'][0]['stat']['plusMinus']
+        if int(plusminus) > 0:
+            plusminus = '+' + str(plusminus)
+        table.add_row(
+            [games, goals, assists, points, pim, plusminus]
+            )
+        table.title = player_name + "'s Regular Season Stats"
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = f'<pre>{table}</pre>', parse_mode=ParseMode.HTML);
+
+    # If the user asks for the stats from a team
+    if teamstats == 1:
+        table = pt.PrettyTable(
+            ['Games Played', 'Wins', 'Losses', 'OT Losses', 'Points', 'Division', 'Standings']
+            )
+        teamdf = pd.read_csv(teamsdb, index_col=None) 
+        teamID = int(teamdf.loc[teamdf.TeamName == team_name, 'TeamID'])
+        api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}/stats'
+        r = requests.get(api_url)
+        team_data = r.json() 
+        team = json.dumps(team_data['stats'][0]['splits'][0]['team']['name'], ensure_ascii=False).encode('utf8')
+        team_fin = team[1:-1]
+        team_dec = str(team_fin.decode("utf8"))
+
+        games_played =           json.dumps(team_data['stats'][0]['splits'][0]['stat']['gamesPlayed'])
+        wins =                   json.dumps(team_data['stats'][0]['splits'][0]['stat']['wins'])
+        losses =                 json.dumps(team_data['stats'][0]['splits'][0]['stat']['losses'])
+        ot_losses =              json.dumps(team_data['stats'][0]['splits'][0]['stat']['ot'])
+        points =                 json.dumps(team_data['stats'][0]['splits'][0]['stat']['pts'])
+        goals_per_game =         json.dumps(team_data['stats'][0]['splits'][0]['stat']['goalsPerGame'])
+        goals_against_per_game = json.dumps(team_data['stats'][0]['splits'][0]['stat']['goalsAgainstPerGame'])
+
+        api_url_standings = f'https://statsapi.web.nhl.com/api/v1/standings'
+        r_standings = requests.get(api_url_standings)
+        team_standings = r_standings.json() 
+        division = ''
+        for n in team_standings['records']:
+            for x in n['teamRecords']:
+                team_id = x['team']['id']
+                if int(team_id) == teamID:
+                    weird, division = n['division']['name'].split(' ')
+                    standing = x['divisionRank']
+        table.add_row(
+            [games_played, wins, losses, ot_losses, points, division, standing]
+            )
+        table.title = 'The ' + team_dec + "'s Regular Season Stats"
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text = f'<pre>{table}</pre>', parse_mode=ParseMode.HTML);
+
+
+def standings(update, context):
+    """
+        Returns the regular season standings
+        for a given division or for all divisions
+    """
+    division_msg = update.message.text
+
+    # If the user specifies a division only that division is returned
+    if division_msg.count(' ') == 1:
+        division_request = division_msg [11:]
+        api_url_standings = f'https://statsapi.web.nhl.com/api/v1/standings'
+        r_standings = requests.get(api_url_standings)
+        standings = r_standings.json() 
+        found = 0
+        for n in standings['records']:
+            weird, division = n['division']['name'].lower().split(' ')
+            if division == division_request:
+                table = pt.PrettyTable(
+                                        ['Standings', 'Teams', 'Points', 'Wins', 'Losses', 'OT Losses']
+                                      )
+                table.title = division.title() + ' Division Standings'
+                for x in n['teamRecords']:
+                    standings = x['divisionRank']
+                    team_name = x['team']['name']
+                    points = x['points']
+                    wins = x['leagueRecord']['wins']
+                    losses = x['leagueRecord']['losses']
+                    ot_losses = x['leagueRecord']['ot']
+                    table.add_row(
+                                    [standings, team_name, points, wins, losses, ot_losses]
+                                 )
+                found = 1
+        if found == 1:
+            updater.bot.sendMessage(chat_id=update.effective_chat.id, text = f'<pre>{table}</pre>', parse_mode=ParseMode.HTML);
+        if found == 0:
+
+            standings_msg = "That is not a division I know." + "\n" + "The divisions are Central, North, East, and West"
+            updater.bot.sendMessage(chat_id=update.effective_chat.id, text=standings_msg)
+            return;
+
+    if division_msg.count(' ') > 1:
+        standings_msg = "One division at a time please."
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text=standings_msg)
+        return;
+
+    # If the user does not specify a division all division standings are returned as individual messages
+    if division_msg.count(' ') == 0:
+        api_url_standings = f'https://statsapi.web.nhl.com/api/v1/standings'
+        r_standings = requests.get(api_url_standings)
+        standings = r_standings.json() 
+        for n in standings['records']:
+            table = pt.PrettyTable(
+                                    ['Standings', 'Teams', 'Points', 'Wins', 'Losses', 'OT Losses']
+                                  )
+            weird, division = n['division']['name'].split(' ')
+            table.title = division + ' Division Standings'
+            for x in n['teamRecords']:
+                standings = x['divisionRank']
+                team_name = x['team']['name']
+                points = x['points']
+                wins = x['leagueRecord']['wins']
+                losses = x['leagueRecord']['losses']
+                ot_losses = x['leagueRecord']['ot']
+                table.add_row(
+                                [standings, team_name, points, wins, losses, ot_losses]
+                             )
+            updater.bot.sendMessage(chat_id=update.effective_chat.id, text = f'<pre>{table}</pre>', parse_mode=ParseMode.HTML);
 
 
 def today(update, context):
@@ -764,6 +983,27 @@ def testautonotify(update, context):
     if update.effective_chat.id == 110799848:
         updater.bot.sendMessage(chat_id=update.effective_chat.id, text = 'Testing Automatic Notifications');
         automation()
+
+def bye(update, context):
+    """
+        Removed the users data from the bots database
+    """
+    global chat_id_noti
+    chat_id_noti = update.effective_chat.id
+    chatsdf = pd.read_csv(chatdb)
+    notiexists = chatsdf.index[chatsdf['ChatID'] == chat_id_noti].values
+    if notiexists.size > 0:            
+        reply_buttons = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("Yes", callback_data='bye'),
+                InlineKeyboardButton("No", callback_data='stay')
+            ],    
+        ])
+        updater.bot.sendMessage(chat_id=chat_id_noti, text=
+            f'Are you sure you would like to delete your team and notifications data?', reply_markup=reply_buttons
+            )
+        return False;
+    updater.bot.sendMessage(chat_id=update.effective_chat.id, text = "You have no data! Run /Setup to start!");
 
 
 def timer ():
@@ -808,6 +1048,9 @@ dispatcher.add_handler(CommandHandler('status', status))
 dispatcher.add_handler(CommandHandler('cupcheck', cupcheck))
 dispatcher.add_handler(CommandHandler('roster', roster))
 dispatcher.add_handler(CommandHandler('player', player))
+dispatcher.add_handler(CommandHandler('stats', stats))
+dispatcher.add_handler(CommandHandler('standings', standings))
+dispatcher.add_handler(CommandHandler('removeme', bye))
 dispatcher.add_handler(CommandHandler('testautonotify', testautonotify))
 dispatcher.add_handler(CommandHandler('stop', stop))
 
