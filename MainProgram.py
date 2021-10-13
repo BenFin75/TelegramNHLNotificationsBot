@@ -12,7 +12,7 @@
 # -----------------------------------------------------------
 
 
-# !/usr/bin/env python
+# !/usr/bin/ env python
 # -*- coding: utf-8 -*-
 from telegram import *
 from telegram.ext import *
@@ -34,7 +34,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 # gets the bot token from remote database so the code can be made public
 bot_token_df = pd.read_csv((os.path.join(
                                         os.path.dirname(os.getcwd()), "TelegramBotTokens.csv")))
-bot_index = int(bot_token_df.index[bot_token_df['Bot Name'] == 'Hockey Bot'].values)
+bot_index = int(bot_token_df.index[bot_token_df['Bot Name'] == 'Hockey Bot testing'].values)
 bot_token = str(bot_token_df.loc[[bot_index], ['Bot Token']].values).strip("'[]")
 bot = Bot(bot_token)  # noqa: F405
 updater = Updater(bot_token, use_context=True)
@@ -130,7 +130,7 @@ def setup(update, context: CallbackContext):
         chatname = update.message.chat.username
     if userid < 0:
         chatname = update.message.chat.title
-    exists = userid in chatsdf.ChatID.values     
+    exists = userid in chatsdf.ChatID.values
     reply_buttons = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("Penguins", callback_data=5),
@@ -446,7 +446,6 @@ def gamecheck(chat_id_set, number_of_teams, team_data):
         game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
         game_time_est = datetime.strftime(game_time_obj, '%I:%M%p')
         playoff_check = json.dumps(team_data['dates'][0]['games'][0]['gameType']).strip('\"')
-
         if playoff_check == 'P':
 
             away_wins_int = int(away_wins)
@@ -481,14 +480,12 @@ def gamecheck(chat_id_set, number_of_teams, team_data):
                     game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + "At " + game_time_est + " est!" + "\n" + 
                                       "The series is tied at " + home_games_won_str + " games!")
                 updater.bot.sendMessage(chat_id=chat_id_set, text=game_check_msg)
-
-            if playoff_check == 'R':
-                away_ot = json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['leagueRecord']['ot'])
-                home_ot = json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['ot'])
-                game_check_msg = ("The " + home_team_dec + " (" + home_wins + "," + home_losses + "," + home_ot + ")" + "\n" + "Host" + "\n" + "The " + away_team_dec + " (" + away_wins + 
-                                  "," + away_losses + "," + away_ot + ") at " + game_time_est + " est!" + "\n" + 
-                                  "The " + leading_team + " Lead " + leading_games + " games to" + trailing_games + "!")
-                updater.bot.sendMessage(chat_id=chat_id_set, text=game_check_msg)
+        if playoff_check == 'R':
+            away_ot = json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['away']['leagueRecord']['ot'])
+            home_ot = json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['ot'])
+            game_check_msg = ("The " + home_team_dec + " (" + home_wins + "," + home_losses + "," + home_ot + ")" + "\n" + "Host" + "\n" + "The " + away_team_dec + " (" + away_wins + 
+                              "," + away_losses + "," + away_ot + ")" + "\n" +  "at " + game_time_est + " est!")
+            updater.bot.sendMessage(chat_id=chat_id_set, text=game_check_msg)
     return
 
 
@@ -501,13 +498,13 @@ def game(update, context):
     chat_index = int(chatsdf.index[chatsdf['ChatID'] == chat_id_set].values)
     chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
     if str(chat_team_ids) == '[[nan]]':
+        print('hereher')
         return
     formatted_chat_team_ids = str(chat_team_ids)[3:-3]
     api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
     r = requests.get(api_url)
     team_data = r.json() 
     number_of_teams = int(json.dumps(team_data['totalGames']))
-
     autonotify = 0
     if not seasoncheck(chat_id_set, autonotify):
         return
