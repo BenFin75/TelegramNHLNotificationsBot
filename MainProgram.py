@@ -26,6 +26,7 @@ import pandas as pd
 from pathlib import Path, PureWindowsPath
 from dateutil.relativedelta import relativedelta
 import prettytable as pt
+import pytz
 
 # configures logging for development
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -48,7 +49,8 @@ teamsdb = Path(teamsdb_win)
 
 team_ids = []
 todays_date = date.today()
-
+zone = 'US/Eastern'
+dst_check = bool(datetime.now(pytz.timezone(zone)).dst())
 
 def seasoncheck(chat_id_set, autonotify):
     """
@@ -367,7 +369,10 @@ def nextgame(update, context):
     game_day_int = int(game_day_str)
     game_day_of_week = datetime.strftime(game_day_obj, '%A')
     game_time = game_fulltime[12:-2]
-    game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
+    if dst_check == True:
+        game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
+    if dst_check ==False:
+        game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5)
     game_time_est = datetime.strftime(game_time_obj, '%I:%M%p')
 
     th_list = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 29, 20, 24, 25, 26, 27, 28, 29, 30]
@@ -443,7 +448,10 @@ def gamecheck(chat_id_set, number_of_teams, team_data):
         home_losses =   json.dumps(team_data['dates'][0]['games'][number_of_teams]['teams']['home']['leagueRecord']['losses'])
         game_fulltime = json.dumps(team_data['dates'][0]['games'][number_of_teams]['gameDate'])
         game_time = game_fulltime[12:-2]
-        game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
+        if dst_check == True:
+            game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
+        if dst_check ==False:
+            game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5)
         game_time_est = datetime.strftime(game_time_obj, '%I:%M%p')
         playoff_check = json.dumps(team_data['dates'][0]['games'][0]['gameType']).strip('\"')
         if playoff_check == 'P':
@@ -528,12 +536,12 @@ def automation():
 
     while len(chats_to_notify) != 0:
         userid = chats_to_notify[0]
-        autimaticgamenotification(userid)
+        automaticgamenotification(userid)
         chats_to_notify.remove(userid)
     timer()
 
 
-def autimaticgamenotification(userid):
+def automaticgamenotification(userid):
     """
         Handles sending the daily notifications
     """
