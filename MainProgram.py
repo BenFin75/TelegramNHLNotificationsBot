@@ -102,7 +102,7 @@ def helpcmd(update, context):
         "/roster <team name>" + "\n" + "get the active roster for a given team e.g /roster Penguins" + "\n" + "\n" + 
         "/player <team name> <player>" + "\n" + "get the numer, full name, and position for a player" + "\n" + " e.g /player Penguins 87 or /player Penguins Crosby" + "\n" + "\n" + 
         "/stats <team name>" + "\n" + "/stats <team name> <player>" + "\n" + "get the regular season stats for a given team or player" + "\n" + " e.g /stats Penguins, /stats Penguins 87, or /stats Penguins Crosby" + "\n" + "\n" + 
-        "/standings <division name>" + "\n" + "get the standings for a given division e.g /standings East" + "\n" + "If left blank /standings will retrun all division stnadings" "\n" + "\n" + 
+        "/standings <division name>" + "\n" + "get the standings for a given division e.g /standings Pacific" + "\n" + "If left blank /standings will retrun all division stnadings" "\n" + "\n" + 
         "/cupcheck" + "\n" + "Important stats" + "\n" + "\n" + 
         "/removeMe" + "\n" + "Delete your teams and notification data." + "\n" + "\n" + 
         "/help" + "\n" + "opens this list of commands" + "\n" + "\n" + 
@@ -897,7 +897,7 @@ def stats(update, context):
             for x in n['teamRecords']:
                 team_id = x['team']['id']
                 if int(team_id) == teamID:
-                    weird, division = n['division']['name'].split(' ')
+                    division = n['division']['name']
                     standing = x['divisionRank']
         table.add_row(
             [games_played, wins, losses, ot_losses, points, division, standing]
@@ -915,13 +915,13 @@ def standings(update, context):
 
     # If the user specifies a division only that division is returned
     if division_msg.count(' ') == 1:
-        division_request = division_msg[11:]
+        division_request = division_msg[11:].lower()
         api_url_standings = 'https://statsapi.web.nhl.com/api/v1/standings'
         r_standings = requests.get(api_url_standings)
         standings = r_standings.json() 
         found = 0
         for n in standings['records']:
-            weird, division = n['division']['name'].lower().split(' ')
+            division = n['division']['name'].lower()
             if division == division_request:
                 table = pt.PrettyTable(
                                         ['Standings', 'Teams', 'Points', 'Wins', 'Losses', 'OT Losses']
@@ -942,7 +942,7 @@ def standings(update, context):
             updater.bot.sendMessage(chat_id=update.effective_chat.id, text=f'<pre>{table}</pre>', parse_mode=ParseMode.HTML)
         if found == 0:
 
-            standings_msg = "That is not a division I know." + "\n" + "The divisions are Central, North, East, and West"
+            standings_msg = "That is not a division I know." + "\n" + "The divisions are Central, Metropolitan, Pacific, and Atlantic"
             updater.bot.sendMessage(chat_id=update.effective_chat.id, text=standings_msg)
             return
 
@@ -960,7 +960,7 @@ def standings(update, context):
             table = pt.PrettyTable(
                                     ['Standings', 'Teams', 'Points', 'Wins', 'Losses', 'OT Losses']
                                   )
-            weird, division = n['division']['name'].split(' ')
+            division = n['division']['name']
             table.title = division + ' Division Standings'
             for x in n['teamRecords']:
                 standings = x['divisionRank']
