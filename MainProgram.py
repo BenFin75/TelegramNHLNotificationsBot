@@ -43,6 +43,8 @@ updater = Updater(bot_token, use_context=True)
 # set the database paths so the bot works on any OS.
 chatdb_win = PureWindowsPath('.\Database\ChatDatabase.csv')
 teamsdb_win = PureWindowsPath('.\Database\TeamNames.csv')
+todaysdb_win = PureWindowsPath('./Database/todaysgames.csv')
+todays_db = Path(todaysdb_win)
 chatdb = Path(chatdb_win)
 teamsdb = Path(teamsdb_win)
 
@@ -108,7 +110,7 @@ def helpcmd(update, context):
         "/help" + "\n" + "opens this list of commands" + "\n" + "\n" + 
         "Thank you for using my bot!" + "\n" + "\n" + 
         "Made by Ben Finley" + "\n" + 
-        "The code for this bot is avalible at: https://github.com/Hiben75/TelegramNHLNotifcationBot"
+        "The code for this bot is avalible at: https://github.com/BenFin75/TelegramNHLNotifcationBot"
         )
     context.bot.send_message(chat_id=update.effective_chat.id, text=help_msg, disable_web_page_preview=1)
 
@@ -373,7 +375,7 @@ def nextgame(update, context):
         game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
     if dst_check ==False:
         game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5)
-    game_time_est = datetime.strftime(game_time_obj, '%I:%M%p')
+    game_time_est = datetime.strftime(game_time_obj, '%-I:%M%p')
 
     th_list = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 29, 20, 24, 25, 26, 27, 28, 29, 30]
     if game_day_int == 1 or game_day_int == 21 or game_day_int == 31:
@@ -452,7 +454,7 @@ def gamecheck(chat_id_set, number_of_teams, team_data):
             game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
         if dst_check ==False:
             game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5)
-        game_time_est = datetime.strftime(game_time_obj, '%I:%M%p')
+        game_time_est = datetime.strftime(game_time_obj, '%-I:%M%p')
         playoff_check = json.dumps(team_data['dates'][0]['games'][0]['gameType']).strip('\"')
         if playoff_check == 'P':
 
@@ -506,7 +508,6 @@ def game(update, context):
     chat_index = int(chatsdf.index[chatsdf['ChatID'] == chat_id_set].values)
     chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
     if str(chat_team_ids) == '[[nan]]':
-        print('hereher')
         return
     formatted_chat_team_ids = str(chat_team_ids)[3:-3]
     api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
@@ -560,8 +561,76 @@ def automaticgamenotification(userid):
     if not seasoncheck(chat_id_set, autonotify):
         return
 
+    df = pd.DataFrame(columns=('HomeIDs', 'AwayIDs', 'Time'))
+    index = 0
+
+    for i in team_data['dates'][0]['games']:
+        home_team = i['teams']['home']['team']['id']
+        away_team = i['teams']['away']['team']['id']
+
+        if dst_check == False:
+            game_fulltime = i['gameDate'] 
+            game_time = game_fulltime[12:-2]
+            if dst_check == True:
+                game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
+            if dst_check ==False:
+                game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5) 
+                game_time_obj - timedelta(minutes= game_time_obj.minute % 10)
+            game_start = str(datetime.strftime(game_time_obj, '%H:%M'))
+
+        df.loc[index] = [home_team, away_team, game_start]
+        index = index+1
+    df.to_csv(todays_db, index=False, header=True)
+
     if number_of_teams > 0:
         gamecheck(chat_id_set, number_of_teams, team_data)
+
+
+def gametimecheck ():
+    now = datetime.now() + timedelta (minutes=10)
+    now -= timedelta(minutes = now.minute % 10)
+    current_time = now.strftime('%H:%M')
+    todays_df = pd.read_csv(todays_db)
+    teamid_inx = list(todays_df.index[todays_df['Time'] == current_time])
+    for i in teamid_inx:
+        teamid_home = str(todays_df.loc[i, 'HomeIDs'])
+        teamid_away = str(todays_df.loc[i, 'AwayIDs'])
+        teamid_now = teamid_home + ',' +teamid_away
+        gametimenotif(teamid_now)
+    dailynotiftimer()
+
+def gametimenotif(teamid_now):
+    teamids = list(teamid_now.split(','))
+    chatdf = pd.read_csv(chatdb)
+    notif_ids = []
+    for i in teamids:
+        notif_chats = chatdf[(chatdf['Notifications'] == 1) & (chatdf['TeamIDs'].str.contains(i))]
+        for i in notif_chats.index:
+            if notif_chats.loc[i, 'ChatID'] not in notif_ids: 
+                notif_ids.append(notif_chats.loc[i, 'ChatID'])
+    api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={teamid_now}&date={todays_date}'
+    r = requests.get(api_url)
+    game_notif = r.json() 
+    # the encoding is so that Montréal has its é, can't forget that
+    away_team =     json.dumps(game_notif['dates'][0]['games'][0]['teams']['away']['team']['name'], ensure_ascii=False).encode('utf8')
+    away_team_fin = away_team[1:-1]
+    away_team_dec = str(away_team_fin.decode("utf8"))
+    home_team =     json.dumps(game_notif['dates'][0]['games'][0]['teams']['home']['team']['name'], ensure_ascii=False).encode('utf8')
+    home_team_fin = home_team[1:-1]
+    home_team_dec = str(home_team_fin.decode("utf8"))
+    game_fulltime = json.dumps(game_notif['dates'][0]['games'][0]['gameDate'])
+    game_time = game_fulltime[12:-2]
+    if dst_check == True:
+        game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
+    if dst_check ==False:
+        game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5)
+    game_time_est = datetime.strftime(game_time_obj, '%-I:%M%p')
+
+    game_time_msg = ('Game Time!' + '\n' + '\n' +'The ' + home_team_dec + '\n' + 'Host' + '\n' + 'The ' + away_team_dec + '\n' + '@ ' + game_time_est + ' est!')
+
+    for i in notif_ids:
+        id = int(i)
+        updater.bot.sendMessage(chat_id=id, text=game_time_msg) 
 
 
 def last(update, context):
@@ -761,7 +830,7 @@ def player(update, context):
         return
 
     # Seaches the api for requested player
-    teamdf = pd.read_csv(teamsdb, index_col=None) 
+    teamdf = pd.read_cs(teamsdb, index_col=None) 
     teamID = int(teamdf.loc[teamdf.TeamName == team_name, 'TeamID'])
     api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster'
     r = requests.get(api_url)
@@ -992,6 +1061,8 @@ def testautonotify(update, context):
     if update.effective_chat.id == 110799848:
         updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Testing Automatic Notifications')
         automation()
+        gametimecheck()
+
 
 
 def bye(update, context):
@@ -1029,6 +1100,21 @@ def timer():
     t.start()
 
 
+def dailynotiftimer():
+    """
+        Checks if there is a game in the next ten minutes every ten minutes
+    """
+    x = datetime.today()
+    secs = 600
+    current_hour = int(x.strftime('%H'))
+    if current_hour >= 9 and current_hour <= 24:
+        t = Timer(secs, gametimecheck)
+        t.start()
+    else:
+        t = Timer(secs,dailynotiftimer)
+        t.start()
+
+
 def stop(update, context):
     """
         stop the bot through a telegram command
@@ -1041,6 +1127,7 @@ def stop(update, context):
 
 # starts automation for game notifications
 timer()
+dailynotiftimer()
 
 # dispatcher for the bot to look for each command
 dispatcher = updater.dispatcher
