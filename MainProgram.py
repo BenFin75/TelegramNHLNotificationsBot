@@ -6,7 +6,7 @@
 # Created by Benjamin Finley
 # Code is availible on GitHub @ https://github.com/Hiben75/TelegramNHLNotifcationBot
 # 
-# Version 1.4.1
+# Version 1.5.1
 # Status: Active
 #
 # -----------------------------------------------------------
@@ -708,7 +708,7 @@ def notifications(update, context: CallbackContext):
                 InlineKeyboardButton("No", callback_data='no')
             ],    
         ])
-        updater.bot.sendMessage(chat_id=chat_id_set, text=(
+        updater.bot.sendMessage(chat_id=chat_id_noti, text=(
                                                             'Would you like daily game notifications?' + "\n" + "Notifications are sent at 8am est."), reply_markup=reply_buttons
                                 )
         return False
