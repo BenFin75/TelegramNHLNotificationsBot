@@ -365,7 +365,8 @@ def nextgame(update, context):
     home_wins =     json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['leagueRecord']['wins'])
     home_losses =   json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['leagueRecord']['losses'])
     game_fulltime = json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['gameDate'])
-    game_day = game_fulltime[1:-11]
+    game_day_full = json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['date'])
+    game_day = game_day_full[1:-1]
     game_day_obj = datetime.strptime(game_day, '%Y-%m-%d')
     game_day_str = datetime.strftime(game_day_obj, '%d')
     game_day_int = int(game_day_str)
