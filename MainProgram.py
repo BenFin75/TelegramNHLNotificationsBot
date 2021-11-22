@@ -565,23 +565,24 @@ def automaticgamenotification(userid):
     df = pd.DataFrame(columns=('HomeIDs', 'AwayIDs', 'Time'))
     index = 0
 
-    for i in team_data['dates'][0]['games']:
-        home_team = i['teams']['home']['team']['id']
-        away_team = i['teams']['away']['team']['id']
+    if team_data['totalItems'] >= 1:
+        for i in team_data['dates'][0]['games']:
+            home_team = i['teams']['home']['team']['id']
+            away_team = i['teams']['away']['team']['id']
 
-        if dst_check == False:
-            game_fulltime = i['gameDate'] 
-            game_time = game_fulltime[12:-2]
-            if dst_check == True:
-                game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
-            if dst_check ==False:
-                game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5) 
-                game_time_obj - timedelta(minutes= game_time_obj.minute % 10)
-            game_start = str(datetime.strftime(game_time_obj, '%H:%M'))
+            if dst_check == False:
+                game_fulltime = i['gameDate'] 
+                game_time = game_fulltime[12:-2]
+                if dst_check == True:
+                    game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=4)
+                if dst_check ==False:
+                    game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5) 
+                    game_time_obj - timedelta(minutes= game_time_obj.minute % 10)
+                game_start = str(datetime.strftime(game_time_obj, '%H:%M'))
 
-        df.loc[index] = [home_team, away_team, game_start]
-        index = index+1
-    df.to_csv(todays_db, index=False, header=True)
+            df.loc[index] = [home_team, away_team, game_start]
+            index = index+1
+        df.to_csv(todays_db, index=False, header=True)
 
     if number_of_teams > 0:
         gamecheck(chat_id_set, number_of_teams, team_data)
