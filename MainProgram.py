@@ -371,7 +371,6 @@ def nextgame(update, context):
     game_day_str = datetime.strftime(game_day_obj, '%d')
     game_day_int = int(game_day_str)
     game_day_txt = str(game_day_int)
-    print (game_day_txt)
     game_day_of_week = datetime.strftime(game_day_obj, '%A')
     game_time = game_fulltime[12:-2]
     if dst_check == True:
