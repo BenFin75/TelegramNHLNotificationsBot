@@ -370,6 +370,8 @@ def nextgame(update, context):
     game_day_obj = datetime.strptime(game_day, '%Y-%m-%d')
     game_day_str = datetime.strftime(game_day_obj, '%d')
     game_day_int = int(game_day_str)
+    game_day_txt = str(game_day_int)
+    print (game_day_txt)
     game_day_of_week = datetime.strftime(game_day_obj, '%A')
     game_time = game_fulltime[12:-2]
     if dst_check == True:
@@ -380,13 +382,13 @@ def nextgame(update, context):
 
     th_list = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 29, 20, 24, 25, 26, 27, 28, 29, 30]
     if game_day_int == 1 or game_day_int == 21 or game_day_int == 31:
-        game_day_str += 'st'
+        game_day_txt += 'st'
     if game_day_int == 2 or game_day_int == 22:
-        game_day_str += 'nd'
+        game_day_txt += 'nd'
     if game_day_int == 3 or game_day_int == 23:
-        game_day_str += 'rd'
+        game_day_txt += 'rd'
     if game_day_int in th_list:
-        game_day_str += 'th'
+        game_day_txt += 'th'
 
     playoff_check = json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['gameType']).strip('\"')
     if playoff_check == 'P':
@@ -403,19 +405,19 @@ def nextgame(update, context):
         tie_check = away_games_won - home_games_won
         if tie_check != 0:
             if leading_games == 1:
-                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_txt + " at " + game_time_est + " est!" + "\n"
                                        + "The " + leading_team + " Lead " + leading_games + " game to " + trailing_games + "!")
             else:
-                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_txt + " at " + game_time_est + " est!" + "\n"
                                        + "The " + leading_team + " Lead " + leading_games + " games to " + trailing_games + "!")
             updater.bot.sendMessage(chat_id=update.effective_chat.id, text=next_game_check_msg)
         if tie_check == 0:
             home_games_won_str = str(home_games_won)
             if home_games_won == 1:
-                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_txt + " at " + game_time_est + " est!" + "\n"
                                        + "The series is tied at " + home_games_won_str + " game!")
             else:
-                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!" + "\n"
+                next_game_check_msg = ("The " + home_team_dec + "\n" + "Host" + "\n" + "The " + away_team_dec + "\n" + game_day_of_week + " the " + game_day_txt + " at " + game_time_est + " est!" + "\n"
                                        + "The series is tied at " + home_games_won_str + " games!")
             updater.bot.sendMessage(chat_id=update.effective_chat.id, text=next_game_check_msg)
 
@@ -424,7 +426,7 @@ def nextgame(update, context):
         home_ot = json.dumps(next_game['teams'][0]['nextGameSchedule']['dates'][0]['games'][0]['teams']['home']['leagueRecord']['ot'])
 
         next_game_check_msg = ("The " + home_team_dec + " (" + home_wins + "," + home_losses + "," + home_ot + ")" + "\n" + "Host" + "\n" + "The " + away_team_dec + " (" + away_wins + 
-                               "," + away_losses + "," + away_ot + ")" + "\n" + game_day_of_week + " the " + game_day_str + " at " + game_time_est + " est!")
+                               "," + away_losses + "," + away_ot + ")" + "\n" + game_day_of_week + " the " + game_day_txt + " at " + game_time_est + " est!")
         context.bot.send_message(chat_id=update.effective_chat.id, text=next_game_check_msg)
 
 
