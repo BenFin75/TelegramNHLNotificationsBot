@@ -533,6 +533,8 @@ def automation():
         and restarts the timer for the next day at 8am
     """
     global todays_date
+    if os.path.exists("./Database/todaysgames.csv"):
+        os.remove("./Database/todaysgames.csv")
     todays_date = date.today()
     chatsdf = pd.read_csv(chatdb)
     chats_to_notify = list(chatsdf.loc[chatsdf['Notifications'] == 1, 'ChatID'])
@@ -563,6 +565,15 @@ def automaticgamenotification(userid):
     if not seasoncheck(chat_id_set, autonotify):
         return
 
+    #create csv for game time notifications
+    gametimecsv(team_data)
+
+    #send game day notifications
+    if number_of_teams > 0:
+        gamecheck(chat_id_set, number_of_teams, team_data)
+
+
+def gametimecsv (team_data):
     df = pd.DataFrame(columns=('HomeIDs', 'AwayIDs', 'Time'))
     index = 0
 
@@ -584,9 +595,8 @@ def automaticgamenotification(userid):
             df.loc[index] = [home_team, away_team, game_start]
             index = index+1
         df.to_csv(todays_db, index=False, header=True)
-
-    if number_of_teams > 0:
-        gamecheck(chat_id_set, number_of_teams, team_data)
+    else:
+        return
 
 
 def gametimecheck ():
@@ -1065,7 +1075,38 @@ def testautonotify(update, context):
         updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Testing Automatic Notifications')
         automation()
         gametimecheck()
+    else:
+        return
 
+
+def creategamelist(update,context):
+    """
+    DEBUGGING FUNCTION
+        manualy creates todaysgames.csv
+    """
+    if update.effective_chat.id == 110799848:
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Testing Automatic Notifications')
+        if os.path.exists("./Database/todaysgames.csv"):
+            os.remove("./Database/todaysgames.csv")
+        todays_date = date.today()
+        chatsdf = pd.read_csv(chatdb)
+        chats_to_notify = list(chatsdf.loc[chatsdf['Notifications'] == 1, 'ChatID'])
+        if len(chats_to_notify) == 0:
+            return
+        while len(chats_to_notify) != 0:
+            userid = chats_to_notify[0]
+            del chats_to_notify[0]
+        chatsdf = pd.read_csv(chatdb)
+        chat_index = int(chatsdf.index[chatsdf['ChatID'] == userid].values)
+        chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
+        formatted_chat_team_ids = str(chat_team_ids)[3:-3]
+        api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
+        r = requests.get(api_url)
+        team_data = r.json() 
+
+        gametimecsv(team_data)
+    else:
+        return
 
 
 def bye(update, context):
@@ -1150,6 +1191,7 @@ dispatcher.add_handler(CommandHandler('stats', stats))
 dispatcher.add_handler(CommandHandler('standings', standings))
 dispatcher.add_handler(CommandHandler('removeme', bye))
 dispatcher.add_handler(CommandHandler('testautonotify', testautonotify))
+dispatcher.add_handler(CommandHandler('creategamelist', creategamelist))
 dispatcher.add_handler(CommandHandler('stop', stop))
 
 
