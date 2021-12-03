@@ -542,7 +542,7 @@ def automation():
     while len(chats_to_notify) != 0:
         userid = chats_to_notify[0]
         automaticgamenotification(userid)
-        chats_to_notify.remove(userid)
+        del chats_to_notify[0]
     timer()
 
 
@@ -591,7 +591,6 @@ def gametimecsv (team_data):
                     game_time_obj = datetime.strptime(game_time, '%H:%M:%S') - timedelta(hours=5) 
                     game_time_obj - timedelta(minutes= game_time_obj.minute % 10)
                 game_start = str(datetime.strftime(game_time_obj, '%H:%M'))
-
             df.loc[index] = [home_team, away_team, game_start]
             index = index+1
         df.to_csv(todays_db, index=False, header=True)
@@ -1093,15 +1092,14 @@ def creategamelist(update,context):
         while len(chats_to_notify) != 0:
             userid = chats_to_notify[0]
             del chats_to_notify[0]
-        chatsdf = pd.read_csv(chatdb)
-        chat_index = int(chatsdf.index[chatsdf['ChatID'] == userid].values)
-        chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
-        formatted_chat_team_ids = str(chat_team_ids)[3:-3]
-        api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
-        r = requests.get(api_url)
-        team_data = r.json() 
-
-        gametimecsv(team_data)
+            chatsdf = pd.read_csv(chatdb)
+            chat_index = int(chatsdf.index[chatsdf['ChatID'] == userid].values)
+            chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
+            formatted_chat_team_ids = str(chat_team_ids)[3:-3]
+            api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
+            r = requests.get(api_url)
+            team_data = r.json() 
+            gametimecsv(team_data)
     else:
         return
 
