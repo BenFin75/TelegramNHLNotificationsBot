@@ -1081,7 +1081,7 @@ def testautonotify(update, context):
 def creategamelist(update,context):
     
     if update.effective_chat.id == admin_chat_id:
-        updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Testing Automatic Notifications')
+        updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Manually creating the game time csv for today!')
         df = pd.DataFrame(columns=('HomeIDs', 'AwayIDs', 'Time'))
         df.to_csv(todays_db, index=False, header=True)
         todays_date = date.today()
