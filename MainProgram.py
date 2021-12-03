@@ -48,7 +48,7 @@ todays_db = Path(todaysdb_win)
 chatdb = Path(chatdb_win)
 teamsdb = Path(teamsdb_win)
 
-
+admin_chat_id = 110799848
 team_ids = []
 todays_date = date.today()
 zone = 'US/Eastern'
@@ -533,8 +533,8 @@ def automation():
         and restarts the timer for the next day at 8am
     """
     global todays_date
-    if os.path.exists("./Database/todaysgames.csv"):
-        os.remove("./Database/todaysgames.csv")
+    df = pd.DataFrame(columns=('HomeIDs', 'AwayIDs', 'Time'))
+    df.to_csv(todays_db, index=False, header=True)
     todays_date = date.today()
     chatsdf = pd.read_csv(chatdb)
     chats_to_notify = list(chatsdf.loc[chatsdf['Notifications'] == 1, 'ChatID'])
@@ -1071,7 +1071,7 @@ def testautonotify(update, context):
     DEBUGING FUCTION  
         runs the daily notifications on command
     """
-    if update.effective_chat.id == 110799848:
+    if update.effective_chat.id == admin_chat_id:
         updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Testing Automatic Notifications')
         automation()
         gametimecheck()
@@ -1080,14 +1080,11 @@ def testautonotify(update, context):
 
 
 def creategamelist(update,context):
-    """
-    DEBUGGING FUNCTION
-        manualy creates todaysgames.csv
-    """
-    if update.effective_chat.id == 110799848:
+    
+    if update.effective_chat.id == admin_chat_id:
         updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Testing Automatic Notifications')
-        if os.path.exists("./Database/todaysgames.csv"):
-            os.remove("./Database/todaysgames.csv")
+        df = pd.DataFrame(columns=('HomeIDs', 'AwayIDs', 'Time'))
+        df.to_csv(todays_db, index=False, header=True)
         todays_date = date.today()
         chatsdf = pd.read_csv(chatdb)
         chats_to_notify = list(chatsdf.loc[chatsdf['Notifications'] == 1, 'ChatID'])
@@ -1163,7 +1160,7 @@ def stop(update, context):
     """
         stop the bot through a telegram command
     """
-    if update.effective_chat.id == 110799848:
+    if update.effective_chat.id == admin_chat_id:
         updater.bot.sendMessage(chat_id=update.effective_chat.id, text='Shuting Down')
         updater.stop()
         updater.is_idle = False
