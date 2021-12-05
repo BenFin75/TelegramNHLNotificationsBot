@@ -36,7 +36,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 bot_token_df = pd.read_csv((os.path.join(
     os.path.dirname(os.getcwd()), "TelegramBotTokens.csv")))
 bot_index = int(
-    bot_token_df.index[bot_token_df['Bot Name'] == 'Hockey Bot testing'].values)
+    bot_token_df.index[bot_token_df['Bot Name'] == 'Hockey Bot'].values)
 bot_token = str(bot_token_df.loc[[bot_index], [
                 'Bot Token']].values).strip("'[]")
 bot = Bot(bot_token)  # noqa: F405
