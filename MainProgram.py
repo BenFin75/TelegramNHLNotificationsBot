@@ -6,7 +6,7 @@
 # Created by Benjamin Finley
 # Code is availible on GitHub @ https://github.com/Hiben75/TelegramNHLNotifcationBot
 #
-# Version 1.5.1
+# Version 1.6.1
 # Status: Active
 #
 # -----------------------------------------------------------
@@ -700,6 +700,29 @@ def gametimenotif(teamid_now):
                            ['home']['team']['name'], ensure_ascii=False).encode('utf8')
     home_team_fin = home_team[1:-1]
     home_team_dec = str(home_team_fin.decode("utf8"))
+
+    # create the url for watching the game on streameast.io
+    hometeam = int(json.dumps(game_notif['dates'][0]['games'][0]['teams']
+                              ['home']['team']['id']))
+    awayteam = int(json.dumps(game_notif['dates'][0]['games'][0]['teams']
+                              ['away']['team']['id']))
+    team_names_df = pd.read_csv(teamsdb, encoding="ISO-8859-1")
+    formatted_teams_df = team_names_df.loc[team_names_df['Formatted'] == 1]
+    home_team_name = formatted_teams_df.loc[formatted_teams_df['TeamID']
+                                            == hometeam, 'TeamName'].values
+    away_team_name = formatted_teams_df.loc[formatted_teams_df['TeamID']
+                                            == awayteam, 'TeamName'].values
+
+    home_name_str = str(home_team_name[0])
+    away_name_str = str(away_team_name[0])
+
+    teams_space = home_name_str + ' ' + away_name_str
+    teams_hyphen = teams_space.replace(" ", "-")
+
+    url = "https://www.streameast.io/nhl/" + teams_hyphen + "/"
+    urlformat = str("<a href='" + url + "'>Click here to watch the game</a>")
+
+    # get the game start time
     game_fulltime = json.dumps(game_notif['dates'][0]['games'][0]['gameDate'])
     game_time = game_fulltime[12:-2]
     if dst_check == True:
@@ -711,11 +734,13 @@ def gametimenotif(teamid_now):
     game_time_est = datetime.strftime(game_time_obj, '%-I:%M%p')
 
     game_time_msg = ('Game Time!' + '\n' + '\n' + 'The ' + home_team_dec + '\n' +
-                     'Host' + '\n' + 'The ' + away_team_dec + '\n' + '@ ' + game_time_est + ' est!')
+                     'Host' + '\n' + 'The ' + away_team_dec + '\n' + '@ ' + game_time_est + 
+                     ' est!' + '\n' + '\n' + urlformat)
 
     for i in notif_ids:
         id = int(i)
-        updater.bot.sendMessage(chat_id=id, text=game_time_msg)
+        updater.bot.sendMessage(
+            chat_id=id, text=game_time_msg, parse_mode=ParseMode.HTML, disable_web_page_preview=1)
 
 
 def last(update, context):
