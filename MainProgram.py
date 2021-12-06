@@ -1314,6 +1314,12 @@ def stop(update, context):
         updater.is_idle = False
 
 
+def unknown (update, context):
+    unknown_msg = ("sorry, I don't know that command" + "\n" + 
+                   "You can use /help to get a list of my commands")
+    updater.bot.sendMessage(
+            chat_id=update.effective_chat.id, text=unknown_msg)
+
 # starts automation for game notifications
 timer()
 dailynotiftimer()
@@ -1338,6 +1344,7 @@ dispatcher.add_handler(CommandHandler('removeme', bye))
 dispatcher.add_handler(CommandHandler('testautonotify', testautonotify))
 dispatcher.add_handler(CommandHandler('creategamelist', creategamelist))
 dispatcher.add_handler(CommandHandler('stop', stop))
+dispatcher.add_handler(MessageHandler(Filters.command, unknown))
 
 
 # startrs the bot
