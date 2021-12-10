@@ -4,7 +4,7 @@
 # as well other information about the league and palyers
 #
 # Created by Benjamin Finley
-# Code is availible on GitHub @ https://github.com/Hiben75/TelegramNHLNotifcationBot
+# Code is availible on GitHub @ https://github.com/BenFin75/TelegramNHLNotifcationBot
 #
 # Version 1.6.1
 # Status: Active
@@ -87,7 +87,7 @@ def start(update, context):
         "Hello!  Welcome to the NHL game notifications bot!" + "\n" + "\n" +
         "Type /setup to get started, or /help for a list of commands." + "\n" + "\n" +
         "Made by Ben Finley" + "\n" +
-        "The code for this bot is avalible at: https://github.com/Hiben75/TelegramNHLNotifcationBot"
+        "The code for this bot is avalible at: https://github.com/BenFin75/TelegramNHLNotifcationBot"
     )
     context.bot.send_message(
         chat_id=update.effective_chat.id, text=welcome_msg, disable_web_page_preview=1)
@@ -964,7 +964,7 @@ def player(update, context):
         return
 
     # Seaches the api for requested player
-    teamdf = pd.read_cs(teamsdb, index_col=None)
+    teamdf = pd.read_csv(teamsdb, index_col=None)
     teamID = int(teamdf.loc[teamdf.TeamName == team_name, 'TeamID'])
     api_url = f'https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster'
     r = requests.get(api_url)
@@ -1025,10 +1025,6 @@ def stats(update, context):
 
     # If the user asks for the stats from a player
     if teamstats == 0:
-        table = pt.PrettyTable(
-            ['Games Played', 'Goals', 'Assists',
-                'Points', 'Penalty Minutes', '+/-']
-        )
         teamdf = pd.read_csv(teamsdb, index_col=None)
         teamID = int(teamdf.loc[teamdf.TeamName == team_name, 'TeamID'])
         if player_info.isnumeric():
@@ -1048,8 +1044,8 @@ def stats(update, context):
             if number == player_info or first.lower() == player_info or last.lower() == player_info or name.lower() == player_info:
                 player_id = n['person']['id']
                 player_name = n['person']['fullName']
+                position = n['position']['code']
                 found = 1
-
         if found == 0:
             player_info = str(player_info)
             if player_info.isnumeric():
@@ -1065,19 +1061,41 @@ def stats(update, context):
         stats_url = f'https://statsapi.web.nhl.com/api/v1/people/{player_id}/stats?stats=statsSingleSeason'
         r_stats = requests.get(stats_url)
         player_stats = r_stats.json()
-
-        games = player_stats['stats'][0]['splits'][0]['stat']['games']
-        goals = player_stats['stats'][0]['splits'][0]['stat']['goals']
-        assists = player_stats['stats'][0]['splits'][0]['stat']['assists']
-        points = player_stats['stats'][0]['splits'][0]['stat']['games']
-        pim = player_stats['stats'][0]['splits'][0]['stat']['pim']
-        plusminus = player_stats['stats'][0]['splits'][0]['stat']['plusMinus']
-        if int(plusminus) > 0:
-            plusminus = '+' + str(plusminus)
-        table.add_row(
-            [games, goals, assists, points, pim, plusminus]
-        )
-        table.title = player_name + "'s Regular Season Stats"
+        if position == "G":
+            table = pt.PrettyTable(
+                ['Games Played', 'Games Started', 'Wins', 'Losses',
+                    'Shutouts', 'Save %', 'Goals Against Average']
+            )
+            games = player_stats['stats'][0]['splits'][0]['stat']['games']
+            gamesStarted = player_stats['stats'][0]['splits'][0]['stat']['gamesStarted']
+            gWins = player_stats['stats'][0]['splits'][0]['stat']['wins']
+            gLosses = player_stats['stats'][0]['splits'][0]['stat']['losses']
+            otLosses = player_stats['stats'][0]['splits'][0]['stat']['ot']
+            shutouts = player_stats['stats'][0]['splits'][0]['stat']['shutouts']
+            savepct = player_stats['stats'][0]['splits'][0]['stat']['savePercentage']
+            gaa = player_stats['stats'][0]['splits'][0]['stat']['goalAgainstAverage']
+            fLosses = str(int(gLosses) + int(otLosses))
+            table.add_row(
+                [games, gamesStarted, gWins, fLosses, shutouts, savepct, gaa]
+            )
+            table.title = player_name + "'s Regular Season Stats"
+        else:
+            table = pt.PrettyTable(
+                ['Games Played', 'Goals', 'Assists',
+                    'Points', 'Penalty Minutes', '+/-']
+                )
+            games = player_stats['stats'][0]['splits'][0]['stat']['games']
+            goals = player_stats['stats'][0]['splits'][0]['stat']['goals']
+            assists = player_stats['stats'][0]['splits'][0]['stat']['assists']
+            points = player_stats['stats'][0]['splits'][0]['stat']['games']
+            pim = player_stats['stats'][0]['splits'][0]['stat']['pim']
+            plusminus = player_stats['stats'][0]['splits'][0]['stat']['plusMinus']
+            if int(plusminus) > 0:
+                plusminus = '+' + str(plusminus)
+            table.add_row(
+                [games, goals, assists, points, pim, plusminus]
+            )
+            table.title = player_name + "'s Regular Season Stats"
         updater.bot.sendMessage(chat_id=update.effective_chat.id,
                                 text=f'<pre>{table}</pre>', parse_mode=ParseMode.HTML)
 
@@ -1315,8 +1333,8 @@ def stop(update, context):
 
 
 def unknown (update, context):
-    unknown_msg = ("sorry, I don't know that command" + "\n" + 
-                   "You can use /help to get a list of my commands")
+    unknown_msg = ("Sorry, I don't know that command." + "\n" + 
+                   "You can use /help to get a list of my commands.")
     updater.bot.sendMessage(
             chat_id=update.effective_chat.id, text=unknown_msg)
 
