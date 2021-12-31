@@ -322,6 +322,20 @@ def teamdatabasecheck(update, context, team_name):
         return True
 
 
+def postponedcheck(original_teams):
+    playing_teams = []
+    teams_list = original_teams.split(',')
+    for team in teams_list:
+        api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={team}&date={todays_date}'
+        r = requests.get(api_url)
+        team_data = r.json()
+        if json.dumps(team_data['dates']) != '[]':
+            postponed_check = str(json.dumps(
+                team_data['dates'][0]['games'][0]['status']['detailedState']))
+            if postponed_check != '"Postponed"':
+                playing_teams.append(team)
+    return ','.join(playing_teams)
+
 def nextgame(update, context):
     """
         Returns the date and opponent for the next game 
@@ -461,7 +475,7 @@ def nextgame(update, context):
             updater.bot.sendMessage(
                 chat_id=update.effective_chat.id, text=next_game_check_msg)
 
-    if playoff_check == 'R':
+    elif playoff_check == 'R':
         away_ot = json.dumps(next_game['teams'][0]['nextGameSchedule']
                              ['dates'][0]['games'][0]['teams']['away']['leagueRecord']['ot'])
         home_ot = json.dumps(next_game['teams'][0]['nextGameSchedule']
@@ -570,13 +584,15 @@ def game(update, context):
     if str(chat_team_ids) == '[[nan]]':
         return
     formatted_chat_team_ids = str(chat_team_ids)[3:-3]
-    api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
+    playingteams = postponedcheck(formatted_chat_team_ids)
+    api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={playingteams}&date={todays_date}'
     r = requests.get(api_url)
     team_data = r.json()
     number_of_teams = int(json.dumps(team_data['totalGames']))
     autonotify = 0
     if not seasoncheck(chat_id_set, autonotify):
         return
+
 
     if number_of_teams > 0:
         gamecheck(chat_id_set, number_of_teams, team_data)
@@ -615,11 +631,11 @@ def automaticgamenotification(userid, df):
     chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
     formatted_chat_team_ids = str(chat_team_ids)[3:-3]
     chat_id_set = userid
-    api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
+    playing_teams = postponedcheck(formatted_chat_team_ids)
+    api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={playing_teams}&date={todays_date}'
     r = requests.get(api_url)
     team_data = r.json()
     number_of_teams = int(json.dumps(team_data['totalGames']))
-
     autonotify = 1
     if not seasoncheck(chat_id_set, autonotify):
         return
@@ -1064,7 +1080,7 @@ def stats(update, context):
         if position == "G":
             table = pt.PrettyTable(
                 ['Games Played', 'Games Started', 'Wins', 'Losses',
-                    'Shutouts', 'Save %', 'Goals Against Average']
+                    'Shutouts', 'Save %', 'Average Goals Against']
             )
             games = player_stats['stats'][0]['splits'][0]['stat']['games']
             gamesStarted = player_stats['stats'][0]['splits'][0]['stat']['gamesStarted']
@@ -1261,7 +1277,8 @@ def creategamelist(update, context):
             chat_index = int(chatsdf.index[chatsdf['ChatID'] == userid].values)
             chat_team_ids = chatsdf.loc[[chat_index], ['TeamIDs']].values
             formatted_chat_team_ids = str(chat_team_ids)[3:-3]
-            api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={formatted_chat_team_ids}&date={todays_date}'
+            playingteams = postponedcheck(formatted_chat_team_ids)
+            api_url = f'https://statsapi.web.nhl.com/api/v1/schedule?teamId={playingteams}&date={todays_date}'
             r = requests.get(api_url)
             team_data = r.json()
             gametimecsv(team_data, df)
