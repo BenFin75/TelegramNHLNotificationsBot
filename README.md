@@ -1,3 +1,5 @@
+This bot is depreciated- please use (https://github.com/BenFin75/TelegramHockeyBotV2 "TelegramHockeyBotV2")
+
 # TelegramNHLNotifcationBot
 
 A telegram bot to get notifications for NHL games.  
