@@ -1,4 +1,4 @@
-This bot is depreciated- please use (https://github.com/BenFin75/TelegramHockeyBotV2 "TelegramHockeyBotV2")
+This bot is depreciated- please use [TelegramHockeyBotV2](https://github.com/BenFin75/TelegramHockeyBotV2)
 
 # TelegramNHLNotifcationBot
 
